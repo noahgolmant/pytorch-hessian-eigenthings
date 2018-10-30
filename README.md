@@ -6,7 +6,7 @@ The `hessian-eigenthings` module provides an efficient way to compute the eigend
 
 For now, you have to install from this repo. It's a tiny thing so why put it on pypi.
 
-`pip install --upgrade git+https://github.com/noahgolmant/pytorch-hessian-eigenthings.git@master`
+`pip install --upgrade git+https://github.com/noahgolmant/pytorch-hessian-eigenthings.git@master#egg=hessian-eigenthings`
 
 ## Usage
 
