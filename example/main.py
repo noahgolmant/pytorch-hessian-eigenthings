@@ -14,11 +14,11 @@ from hessian_eigenthings import compute_hessian_eigenthings
 
 
 def extra_args(parser):
-    parser.add_argument('--num_eigenthings', default=2, type=int,
+    parser.add_argument('--num_eigenthings', default=5, type=int,
                         help='number of eigenvals/vecs to compute')
     parser.add_argument('--batch_size', default=128, type=int,
                         help='train set batch size')
-    parser.add_argument('--eval_batch_size', default=100, type=int,
+    parser.add_argument('--eval_batch_size', default=16, type=int,
                         help='test set batch size')
 
 
@@ -29,20 +29,17 @@ def main(args):
                                             eval_batch_size=args.eval_batch_size,
                                             num_workers=2)
     model = build_model('ResNet18', num_classes=10)
-    criterion = torch.nn.CrossEntropyLoss
+    criterion = torch.nn.CrossEntropyLoss()
     eigenvals, eigenvecs = compute_hessian_eigenthings(model, testloader,
                                                        criterion,
                                                        args.num_eigenthings)
-    track.metric(iteration=0, eigenvals=eigenvals, eigenvecs=eigenvecs)
-
-
-def postprocess(proj):
-    df = skeletor.proc.df_from_proj(proj)
-    print("Eigenvalues and eigenvecs:")
-    print(df[['eigenvals', 'eigenvecs']])
+    print("Eigenvecs:")
+    print(eigenvecs)
+    print("Eigenvals:")
+    print(eigenvals)
+    track.metric(iteration=0, eigenvals=eigenvals)
 
 
 if __name__ == '__main__':
     skeletor.supply_args(extra_args)
-    skeletor.supply_postprocess(postprocess, save_proj=False)
     skeletor.execute(main)
