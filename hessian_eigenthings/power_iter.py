@@ -61,10 +61,10 @@ def deflated_power_iteration(operator,
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return op.apply(x) - _deflate(x, val, vec)
         current_op = LambdaOperator(_new_op_fn, operator.size)
-        eigenvals.append(eigenval)
-        eigenvecs.append(eigenvec)
+        eigenvals.append(eigenval.item())
+        eigenvecs.append(eigenvec.cpu())
 
-    return np.array(eigenvals), np.array(eigenvecs)
+    return eigenvals, eigenvecs
 
 
 def power_iteration(operator, steps=20, error_threshold=1e-4, use_gpu=True):
@@ -74,7 +74,7 @@ def power_iteration(operator, steps=20, error_threshold=1e-4, use_gpu=True):
     steps: number of update steps to take
     returns: (principal eigenvalue, principal eigenvector) pair
     """
-    vector_size = operator.size[0]  # input dimension of operator
+    vector_size = operator.size  # input dimension of operator
     vec = torch.rand(vector_size)
     if use_gpu:
         vec = vec.cuda()

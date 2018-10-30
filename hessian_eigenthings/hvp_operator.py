@@ -15,7 +15,7 @@ class HVPOperator(Operator):
     use_gpu: use cuda or not
     """
 
-    def __init__(self, model, dataloader, loss, use_gpu=True):
+    def __init__(self, model, dataloader, criterion, use_gpu=True):
         size = int(sum(p.numel() for p in model.parameters()))
         super(HVPOperator, self).__init__(size)
         self.grad_vec = torch.zeros(size)
@@ -25,7 +25,7 @@ class HVPOperator(Operator):
         self.dataloader = dataloader
         # Make a copy since we will go over it a bunch
         self.dataloader_iter = iter(dataloader)
-        self.loss_fn = loss
+        self.criterion = criterion
         self.use_gpu = use_gpu
 
     def apply(self, vec):
@@ -69,7 +69,7 @@ class HVPOperator(Operator):
             target = target.cuda()
 
         output = self.model(input)
-        loss = self.loss_fn(output, target)
+        loss = self.criterion(output, target)
         grad_dict = torch.autograd.grad(
             loss, self.model.parameters(), create_graph=True)
         self.grad_vec = torch.cat([g.contiguous().view(-1) for g in grad_dict])
