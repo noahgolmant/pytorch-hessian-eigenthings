@@ -37,6 +37,7 @@ def deflated_power_iteration(operator,
                              num_eigenthings=10,
                              power_iter_steps=20,
                              power_iter_err_threshold=1e-4,
+                             momentum=0.0,
                              use_gpu=True):
     """
     Compute top k eigenvalues by repeatedly subtracting out dyads
@@ -56,6 +57,7 @@ def deflated_power_iteration(operator,
     for _ in range(num_eigenthings):
         eigenval, eigenvec = power_iteration(current_op, power_iter_steps,
                                              power_iter_err_threshold,
+                                             momentum=momentum,
                                              use_gpu=use_gpu)
 
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
@@ -67,7 +69,8 @@ def deflated_power_iteration(operator,
     return eigenvals, eigenvecs
 
 
-def power_iteration(operator, steps=20, error_threshold=1e-4, use_gpu=True):
+def power_iteration(operator, steps=20, error_threshold=1e-4,
+                    momentum=0.0, use_gpu=True):
     """
     Compute dominant eigenvalue/eigenvector of a matrix
     operator: linear Operator giving us matrix-vector product access
@@ -80,8 +83,11 @@ def power_iteration(operator, steps=20, error_threshold=1e-4, use_gpu=True):
         vec = vec.cuda()
 
     prev_lambda = 0.
+    prev_vec = torch.zeros_like(vec)
     for _ in range(steps):
-        new_vec = operator.apply(vec)
+        new_vec = operator.apply(vec) - momentum * prev_vec
+        prev_vec = vec / torch.norm(vec)
+
         lambda_estimate = vec.dot(new_vec)
         diff = lambda_estimate - prev_lambda
         vec = new_vec.detach() / torch.norm(new_vec)
