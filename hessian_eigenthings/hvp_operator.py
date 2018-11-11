@@ -13,9 +13,11 @@ class HVPOperator(Operator):
     dataloader: pytorch dataloader that we get examples from to compute grads
     loss:   Loss function to descend (e.g. F.cross_entropy)
     use_gpu: use cuda or not
+    max_samples: max number of examples per batch using all GPUs.
     """
 
-    def __init__(self, model, dataloader, criterion, use_gpu=True):
+    def __init__(self, model, dataloader, criterion, use_gpu=True,
+                 max_samples=512):
         size = int(sum(p.numel() for p in model.parameters()))
         super(HVPOperator, self).__init__(size)
         self.grad_vec = torch.zeros(size)
@@ -27,6 +29,7 @@ class HVPOperator(Operator):
         self.dataloader_iter = iter(dataloader)
         self.criterion = criterion
         self.use_gpu = use_gpu
+        self.max_samples = max_samples
 
     def apply(self, vec):
         """
@@ -59,20 +62,32 @@ class HVPOperator(Operator):
         Compute gradient w.r.t loss over all parameters and vectorize
         """
         try:
-            input, target = next(self.dataloader_iter)
+            all_inputs, all_targets = next(self.dataloader_iter)
         except StopIteration:
             self.dataloader_iter = iter(self.dataloader)
-            input, target = next(self.dataloader_iter)
+            all_inputs, all_targets = next(self.dataloader_iter)
 
-        if self.use_gpu:
-            input = input.cuda()
-            target = target.cuda()
+        num_chunks = max(1, len(all_inputs) // self.max_samples)
 
-        output = self.model(input)
-        loss = self.criterion(output, target)
-        grad_dict = torch.autograd.grad(
-            loss, self.model.parameters(), create_graph=True)
-        self.grad_vec = torch.cat([g.contiguous().view(-1) for g in grad_dict])
+        grad_vec = False
+
+        input_chunks = all_inputs.chunk(num_chunks)
+        target_chunks = all_targets.chunk(num_chunks)
+        for input, target in zip(input_chunks, target_chunks):
+            if self.use_gpu:
+                input = input.cuda()
+                target = target.cuda()
+
+            output = self.model(input)
+            loss = self.criterion(output, target)
+            grad_dict = torch.autograd.grad(
+                loss, self.model.parameters(), create_graph=True)
+            if grad_vec:
+                grad_vec += torch.cat([g.contiguous().view(-1) for g in grad_dict])
+            else:
+                grad_vec = torch.cat([g.contiguous().view(-1) for g in grad_dict])
+        grad_vec /= num_chunks
+        self.grad_vec = grad_vec
         return self.grad_vec
 
 
@@ -81,13 +96,15 @@ def compute_hessian_eigenthings(model, dataloader, loss,
                                 power_iter_steps=20,
                                 power_iter_err_threshold=1e-4,
                                 momentum=0.0,
-                                use_gpu=True):
+                                use_gpu=True,
+                                max_samples=512):
     """
     Computes the top `num_eigenthings` eigenvalues and eigenvecs
     for the hessian of the given model by using subsampled power iteration
     with deflation and the hessian-vector product
     """
-    hvp_operator = HVPOperator(model, dataloader, loss, use_gpu=use_gpu)
+    hvp_operator = HVPOperator(model, dataloader, loss, use_gpu=use_gpu,
+                               max_samples=max_samples)
     eigenvals, eigenvecs = deflated_power_iteration(hvp_operator,
                                                     num_eigenthings,
                                                     power_iter_steps,
