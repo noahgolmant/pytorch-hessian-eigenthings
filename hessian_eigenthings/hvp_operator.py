@@ -80,6 +80,7 @@ def compute_hessian_eigenthings(model, dataloader, loss,
                                 num_eigenthings=10,
                                 power_iter_steps=20,
                                 power_iter_err_threshold=1e-4,
+                                momentum=0.0,
                                 use_gpu=True):
     """
     Computes the top `num_eigenthings` eigenvalues and eigenvecs
@@ -91,5 +92,6 @@ def compute_hessian_eigenthings(model, dataloader, loss,
                                                     num_eigenthings,
                                                     power_iter_steps,
                                                     power_iter_err_threshold,
+                                                    momentum=momentum,
                                                     use_gpu=use_gpu)
     return eigenvals, eigenvecs

@@ -5,7 +5,7 @@ ResNet18 network for CIFAR-10
 
 import track
 import skeletor
-from skeletor.dataset import build_dataset
+from skeletor.datasets import build_dataset
 from skeletor.models import build_model
 
 import torch
@@ -20,6 +20,10 @@ def extra_args(parser):
                         help='train set batch size')
     parser.add_argument('--eval_batch_size', default=16, type=int,
                         help='test set batch size')
+    parser.add_argument('--momentum', default=0.0, type=float,
+                        help='power iteration momentum term')
+    parser.add_argument('--num_steps', default=20, type=int,
+                        help='number of power iter steps')
 
 
 def main(args):
@@ -32,7 +36,9 @@ def main(args):
     criterion = torch.nn.CrossEntropyLoss()
     eigenvals, eigenvecs = compute_hessian_eigenthings(model, testloader,
                                                        criterion,
-                                                       args.num_eigenthings)
+                                                       args.num_eigenthings,
+                                                       args.num_steps,
+                                                       momentum=args.momentum)
     print("Eigenvecs:")
     print(eigenvecs)
     print("Eigenvals:")
