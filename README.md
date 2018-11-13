@@ -28,3 +28,17 @@ eigenvals, eigenvecs = compute_hessian_eigenthings(model, dataloader,
 ```
 
 This also includes a more general power iteration with deflation implementation in `power_iter.py`.
+
+## Acknowledgements
+
+This code was written in collaboration with Zhewei Yao, Amir Gholami, and Michael Mahoney in the RISELab.
+
+The deflated power iteration routine is based on code in the [HessianFlow](https://github.com/amirgholami/HessianFlow) repository recently described in the following paper:
+
+Z. Yao, A. Gholami, Q. Lei, K. Keutzer, M. Mahoney. "Hessian-based Analysis of Large Batch Training and Robustness to Adversaries", *NIPS'18* (arXiv:1802.08241)
+
+Stochastic power iteration with acceleration is based on the following paper:
+
+C. De Sa, B. He, I. Mitliagkas, C. Ré, P. Xu. "Accelerated Stochastic Power Iteration", *PMLR'18* (arXiv:1707.02670)
+
+
