@@ -31,7 +31,7 @@ This also includes a more general power iteration with deflation implementation 
 
 ## Acknowledgements
 
-This code was written in collaboration with Zhewei Yao, Amir Gholami, and Michael Mahoney in the RISELab.
+This code was written in collaboration with Zhewei Yao, Amir Gholami, and Michael Mahoney in UC Berkeley's [RISELab](https://rise.cs.berkeley.edu).
 
 The deflated power iteration routine is based on code in the [HessianFlow](https://github.com/amirgholami/HessianFlow) repository recently described in the following paper: Z. Yao, A. Gholami, Q. Lei, K. Keutzer, M. Mahoney. "Hessian-based Analysis of Large Batch Training and Robustness to Adversaries", *NIPS'18* ([arXiv:1802.08241](https://arxiv.org/abs/1802.08241))
 
