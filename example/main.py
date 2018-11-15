@@ -24,6 +24,8 @@ def extra_args(parser):
                         help='power iteration momentum term')
     parser.add_argument('--num_steps', default=20, type=int,
                         help='number of power iter steps')
+    parser.add_argument('--cuda', action='store_true',
+                        help='if true, use CUDA/GPUs')
 
 
 def main(args):
@@ -38,7 +40,8 @@ def main(args):
                                                        criterion,
                                                        args.num_eigenthings,
                                                        args.num_steps,
-                                                       momentum=args.momentum)
+                                                       momentum=args.momentum,
+                                                       use_gpu=args.cuda)
     print("Eigenvecs:")
     print(eigenvecs)
     print("Eigenvals:")

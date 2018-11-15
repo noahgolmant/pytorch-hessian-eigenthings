@@ -63,7 +63,7 @@ def deflated_power_iteration(operator,
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return op.apply(x) - _deflate(x, val, vec)
         current_op = LambdaOperator(_new_op_fn, operator.size)
-        eigenvals.append(eigenval.item())
+        eigenvals.append(eigenval)
         eigenvecs.append(eigenvec.cpu())
 
     return eigenvals, eigenvecs
@@ -88,7 +88,7 @@ def power_iteration(operator, steps=20, error_threshold=1e-4,
         new_vec = operator.apply(vec) - momentum * prev_vec
         prev_vec = vec / torch.norm(vec)
 
-        lambda_estimate = vec.dot(new_vec)
+        lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda
         vec = new_vec.detach() / torch.norm(new_vec)
         error = np.abs(diff / lambda_estimate)
