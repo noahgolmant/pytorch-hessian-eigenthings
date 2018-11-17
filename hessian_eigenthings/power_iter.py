@@ -38,17 +38,34 @@ def deflated_power_iteration(operator,
                              power_iter_steps=20,
                              power_iter_err_threshold=1e-4,
                              momentum=0.0,
-                             use_gpu=True):
+                             use_gpu=True,
+                             most_negative=False):
     """
     Compute top k eigenvalues by repeatedly subtracting out dyads
     operator: linear operator that gives us access to matrix vector product
     num_eigenvals number of eigenvalues to compute
     power_iter_steps: number of steps per run of power iteration
     power_iter_err_threshold: early stopping threshold for power iteration
+
+    most_negative: if True, get the most negative eigenvalues instead
+
     returns: np.ndarray of top eigenvalues, np.ndarray of top eigenvectors
     """
     eigenvals = []
     eigenvecs = []
+
+    if most_negative:
+        top_eigenval, _ = power_iteration(operator, power_iter_steps,
+                                          power_iter_err_threshold,
+                                          momentum=momentum,
+                                          use_gpu=use_gpu)
+        SCALE = 1.5  # make sure we deflate the main op enough
+        top_eigenval = SCALE * abs(top_eigenval)
+
+        def _min_op(x, op=operator):
+            return op.apply(x) - top_eigenval * x
+        operator = LambdaOperator(_min_op, operator.size)
+
     current_op = operator
 
     def _deflate(x, val, vec):
@@ -63,6 +80,8 @@ def deflated_power_iteration(operator,
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return op.apply(x) - _deflate(x, val, vec)
         current_op = LambdaOperator(_new_op_fn, operator.size)
+        if most_negative:
+            eigenval += top_eigenval
         eigenvals.append(eigenval)
         eigenvecs.append(eigenvec.cpu())
 
