@@ -52,6 +52,7 @@ class HessianTracker:
                                    prev,
                                    use_gpu)
         self.power_iter_fn = _power_iter_fn
+        self.power_iter_steps = power_iter_steps
 
         # Set initial eigenvalue estimates
         self.eigenvecs = None
@@ -92,5 +93,3 @@ class HessianTracker:
     def get_eigenthings(self):
         """ Get current estimate of the eigenthings """
         return self.eigenvals, self.eigenvecs
-
-
