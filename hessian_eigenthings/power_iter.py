@@ -70,7 +70,7 @@ def deflated_power_iteration(operator,
 
 
 def power_iteration(operator, steps=20, error_threshold=1e-4,
-                    momentum=0.0, use_gpu=True):
+                    momentum=0.0, init_vec=None, use_gpu=True):
     """
     Compute dominant eigenvalue/eigenvector of a matrix
     operator: linear Operator giving us matrix-vector product access
@@ -78,7 +78,12 @@ def power_iteration(operator, steps=20, error_threshold=1e-4,
     returns: (principal eigenvalue, principal eigenvector) pair
     """
     vector_size = operator.size  # input dimension of operator
-    vec = torch.rand(vector_size)
+
+    if init_vec is None:
+        vec = torch.rand(vector_size)
+    else:
+        vec = init_vec
+
     if use_gpu:
         vec = vec.cuda()
 
