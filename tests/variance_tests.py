@@ -99,7 +99,8 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
             criterion,
             num_eigenthings=nparams,
             power_iter_steps=100,
-            power_iter_err_threshold=1e-10,
+            power_iter_err_threshold=1e-5,
+            momentum=0,
             use_gpu=False)
         est_eigenvals = np.array(est_eigenvals)
         est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
@@ -115,6 +116,7 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
     # Plot eigenvalue error
     plt.subplot(1, 2, 1)
     plt.title('Eigenvalue errors')
+    plt.ylim(-10, 10)
     plt.plot(list(range(nparams)), real_eigenvals, label='True Eigenvals')
     plot_eigenval_estimates(eigenvals, label='%d trials' % ntrials)
     plt.legend()
@@ -127,10 +129,10 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
 
 
 if __name__ == '__main__':
-    indim = 5
+    indim = 10
     outdim = 1
-    nsamples = 10
-    ntrials = 100
+    nsamples = 100
+    ntrials = 50
 
     model = torch.nn.Linear(indim, outdim)
     criterion = torch.nn.MSELoss()
