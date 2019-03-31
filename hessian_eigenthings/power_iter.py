@@ -94,7 +94,7 @@ def power_iteration(operator, steps=20, error_threshold=1e-4,
     prev_vec = torch.zeros_like(vec)
     for _ in range(steps):
         new_vec = operator.apply(vec) - momentum * prev_vec
-        prev_vec = vec / torch.norm(vec)
+        prev_vec = vec / (torch.norm(vec) + 1e-6)
 
         lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda
