@@ -50,6 +50,7 @@ def deflated_power_iteration(operator,
     eigenvals = []
     eigenvecs = []
     current_op = operator
+    prev_vec = None
 
     def _deflate(x, val, vec):
         return val * vec.dot(x) * vec
@@ -58,11 +59,13 @@ def deflated_power_iteration(operator,
         eigenval, eigenvec = power_iteration(current_op, power_iter_steps,
                                              power_iter_err_threshold,
                                              momentum=momentum,
-                                             use_gpu=use_gpu)
+                                             use_gpu=use_gpu,
+                                             init_vec=prev_vec)
 
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return op.apply(x) - _deflate(x, val, vec)
         current_op = LambdaOperator(_new_op_fn, operator.size)
+        prev_vec = eigenvec
         eigenvals.append(eigenval)
         eigenvecs.append(eigenvec.cpu())
 
@@ -70,7 +73,8 @@ def deflated_power_iteration(operator,
 
 
 def power_iteration(operator, steps=20, error_threshold=1e-4,
-                    momentum=0.0, use_gpu=True):
+                    momentum=0.0, use_gpu=True,
+                    init_vec=None):
     """
     Compute dominant eigenvalue/eigenvector of a matrix
     operator: linear Operator giving us matrix-vector product access
@@ -78,7 +82,11 @@ def power_iteration(operator, steps=20, error_threshold=1e-4,
     returns: (principal eigenvalue, principal eigenvector) pair
     """
     vector_size = operator.size  # input dimension of operator
-    vec = torch.rand(vector_size)
+    if init_vec is None:
+        vec = torch.rand(vector_size)
+    else:
+        vec = init_vec
+
     if use_gpu:
         vec = vec.cuda()
 
@@ -86,7 +94,7 @@ def power_iteration(operator, steps=20, error_threshold=1e-4,
     prev_vec = torch.zeros_like(vec)
     for _ in range(steps):
         new_vec = operator.apply(vec) - momentum * prev_vec
-        prev_vec = vec / torch.norm(vec)
+        prev_vec = vec / (torch.norm(vec) + 1e-6)
 
         lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda

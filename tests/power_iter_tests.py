@@ -7,6 +7,8 @@ import argparse
 import numpy as np
 import torch
 from hessian_eigenthings.power_iter import LambdaOperator, deflated_power_iteration
+import matplotlib.pyplot as plt
+from utils import plot_eigenval_estimates, plot_eigenvec_errors
 
 parser = argparse.ArgumentParser(description='power iteration tester')
 
@@ -18,63 +20,63 @@ parser.add_argument('--power_iter_steps', default=20, type=int,
                     help='number of steps of power iteration')
 parser.add_argument('--momentum', default=0, type=float,
                     help='acceleration term for stochastic power iter')
-parser.add_argument('--num_trials', default=10, type=int,
+parser.add_argument('--num_trials', default=30, type=int,
                     help='number of matrices per test')
 args = parser.parse_args()
 
 
-def compute_eigenval_err(true, estimated):
-    """ Compute mean percent difference between eigenvalue estimates """
-    percent_differences = []
-    for actual, estimate in zip(true, estimated):
-        err = np.abs(actual - estimate) / actual
-        percent_differences.append(err)
-    return np.mean(percent_differences)
-
-
-def compute_eigenvec_err(true, estimated):
-    """ Percent difference in similarity """
-    errs = []
-    for actual, estimate in zip(true, estimated):
-        score = np.abs(np.dot(actual, estimate))
-        err = np.abs(np.dot(actual, actual) - score) / np.dot(actual, actual)
-        errs.append(err)
-    return np.mean(errs)
-
-
-def test_matrix(mat):
+def test_matrix(mat, ntrials):
     """
     Tests the accuracy of deflated power iteration on the given matrix.
     It computes the average percent eigenval error and eigenvec simliartiy err
     """
     tensor = torch.from_numpy(mat).float()
     op = LambdaOperator(lambda x: torch.matmul(tensor, x), tensor.size()[:1])
-    true_eigenvals, true_eigenvecs = np.linalg.eig(mat)
-    true_eigenvecs = [true_eigenvecs[:, i] for i in range(len(true_eigenvals))]
+    real_eigenvals, true_eigenvecs = np.linalg.eig(mat)
+    real_eigenvecs = [true_eigenvecs[:, i] for i in range(len(real_eigenvals))]
 
-    estimated_eigenvals, estimated_eigenvecs = deflated_power_iteration(
-        op,
-        num_eigenthings=args.num_eigenthings,
-        power_iter_steps=args.power_iter_steps,
-        momentum=args.momentum,
-        use_gpu=False
-    )
-    estimated_eigenvecs = list(map(lambda t: t.numpy(), estimated_eigenvecs))
+    eigenvals = []
+    eigenvecs = []
+    for _ in range(ntrials):
+        est_eigenvals, est_eigenvecs = deflated_power_iteration(
+            op,
+            num_eigenthings=args.num_eigenthings,
+            power_iter_steps=args.power_iter_steps,
+            momentum=args.momentum,
+            use_gpu=False
+        )
+        est_eigenvals = np.array(est_eigenvals)
+        est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
+
+        est_inds = np.argsort(est_eigenvals)
+        est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
+        est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
+
+        eigenvals.append(est_eigenvals)
+        eigenvecs.append(est_eigenvecs)
+
+    eigenvals = np.array(eigenvals)
+    eigenvecs = np.array(eigenvecs)
 
     # truncate estimates
-    true_inds = np.argsort(true_eigenvals)
-    true_eigenvals = np.array(true_eigenvals)[true_inds][-args.num_eigenthings:]
-    true_eigenvecs = np.array(true_eigenvecs)[true_inds][-args.num_eigenthings:]
+    real_inds = np.argsort(real_eigenvals)
+    real_eigenvals = np.array(real_eigenvals)[real_inds][-args.num_eigenthings:][::-1]
+    real_eigenvecs = np.array(real_eigenvecs)[real_inds][-args.num_eigenthings:][::-1]
 
-    est_inds = np.argsort(estimated_eigenvals)
-    estimated_eigenvals = np.array(estimated_eigenvals)[est_inds]
-    estimated_eigenvecs = np.array(estimated_eigenvecs)[est_inds]
-
-    eigenval_err = compute_eigenval_err(true_eigenvals,
-                                        estimated_eigenvals)
-    eigenvec_err = compute_eigenvec_err(true_eigenvecs,
-                                        estimated_eigenvecs)
-    return eigenval_err, eigenvec_err
+    # Plot eigenvalue error
+    plt.suptitle('Random Matrix Eigendecomposition Errors: %d trials' % ntrials)
+    plt.subplot(1, 2, 1)
+    plt.title('Eigenvalues')
+    plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label='True Eigenvals')
+    plt.ylim(0, 50)
+    plot_eigenval_estimates(eigenvals, label='Estimates')
+    plt.legend()
+    # Plot eigenvector L2 norm error
+    plt.subplot(1, 2, 2)
+    plt.title('Eigenvector cosine simliarity')
+    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label='Estimates')
+    plt.legend()
+    plt.show()
 
 
 def generate_wishart(n, offset=0.0):
@@ -89,9 +91,8 @@ def generate_wishart(n, offset=0.0):
 
 
 def test_wishart():
-    for _ in range(args.num_trials):
-        m = generate_wishart(args.matrix_dim)
-        print(test_matrix(m))
+    m = generate_wishart(args.matrix_dim)
+    test_matrix(m, args.num_trials)
 
 
 if __name__ == '__main__':

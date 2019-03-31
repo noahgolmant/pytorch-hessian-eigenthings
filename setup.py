@@ -11,4 +11,5 @@ setup(name="hessian_eigenthings",
       author="Noah Golmant",
       install_requires=install_requires,
       packages=find_packages(),
-      description='Eigendecomposition of model Hessians in PyTorch!')
+      description='Eigendecomposition of model Hessians in PyTorch!',
+      version='0.0.1')
