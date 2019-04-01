@@ -167,6 +167,7 @@ def test_fixed_mini(model, criterion, real_hessian, x, y, bs=10, ntrials=10):
             dataloader,
             criterion,
             num_eigenthings=nparams,
+            mode='lanczos',
             power_iter_steps=10,
             power_iter_err_threshold=1e-5,
             momentum=0,
@@ -218,5 +219,5 @@ if __name__ == '__main__':
     y = torch.rand((nsamples, outdim))
 
     hessian = test_full_hessian(model, criterion, x, y, ntrials=ntrials)
-    test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
-    test_fixed_mini(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
+    # test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
+    # test_fixed_mini(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)

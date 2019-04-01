@@ -1,12 +1,13 @@
 """
-This file tests the accuracy of the power iteration methods by comparing
+This file tests the accuracy of the *lanczos* methods by comparing
 against np.linalg.eig results for various random matrix configurations
 """
 
 import argparse
 import numpy as np
 import torch
-from hessian_eigenthings.power_iter import LambdaOperator, deflated_power_iteration
+from hessian_eigenthings.lanczos import lanczos
+from hessian_eigenthings.power_iter import LambdaOperator
 import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
 
@@ -38,16 +39,11 @@ def test_matrix(mat, ntrials):
     eigenvals = []
     eigenvecs = []
     for _ in range(ntrials):
-        est_eigenvals, est_eigenvecs = deflated_power_iteration(
+        est_eigenvals, est_eigenvecs = lanczos(
             op,
             num_eigenthings=args.num_eigenthings,
-            power_iter_steps=args.power_iter_steps,
-            momentum=args.momentum,
             use_gpu=False
         )
-        est_eigenvals = np.array(est_eigenvals)
-        est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
-
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
         est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
