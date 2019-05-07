@@ -219,5 +219,5 @@ if __name__ == '__main__':
     y = torch.rand((nsamples, outdim))
 
     hessian = test_full_hessian(model, criterion, x, y, ntrials=ntrials)
-    # test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
+    test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
     # test_fixed_mini(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)

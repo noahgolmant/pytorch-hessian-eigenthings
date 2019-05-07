@@ -11,7 +11,7 @@ def lanczos(operator,
             which='LM',
             max_steps=20,
             tol=1e-6,
-            num_lanczos_vectors=20,
+            num_lanczos_vectors=None,
             init_vec=None,
             use_gpu=False):
     """
@@ -32,7 +32,7 @@ def lanczos(operator,
     tol : float
         relative accuracy of eigenvalues / stopping criterion
     num_lanczos_vectors : int
-        number of lanczos vectors to compute. usually > 2*num_eigenthings
+        number of lanczos vectors to compute. if None, > 2*num_eigenthings
     init_vec: [torch.Tensor, torch.cuda.Tensor]
         if None, use random tensor. this is the init vec for arnoldi updates.
     use_gpu: bool
@@ -40,15 +40,18 @@ def lanczos(operator,
 
     Returns
     ----------------
-    eigenvalues : arrray
+    eigenvalues : np.ndarray
         array containing `num_eigenthings` eigenvalues of the operator
-    eigenvectors : array
+    eigenvectors : np.ndarray
         array containing `num_eigenthings` eigenvectors of the operator
     """
-    if num_lanczos_vectors < 2 * num_eigenthings:
-        warn("[lanczos] number of lanczos vectors should usually be > 2*num_eigenthings")
     size = operator.size[0]
     shape = (size, size)
+
+    if num_lanczos_vectors is None:
+        num_lanczos_vectors = min(2 * num_eigenthings, size - 1)
+    if num_lanczos_vectors < 2 * num_eigenthings:
+        warn("[lanczos] number of lanczos vectors should usually be > 2*num_eigenthings")
 
     def _scipy_apply(x):
         x = torch.from_numpy(x)

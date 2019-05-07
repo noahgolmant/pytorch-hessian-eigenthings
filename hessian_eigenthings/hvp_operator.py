@@ -3,8 +3,8 @@ This module defines a linear operator to compute the hessian-vector product
 for a given pytorch model using subsampled data.
 """
 import torch
-from .power_iter import Operator, deflated_power_iteration
-from .lanczos import lanczos
+from hessian_eigenthings.power_iter import Operator, deflated_power_iteration
+from hessian_eigenthings.lanczos import lanczos
 
 
 class HVPOperator(Operator):
