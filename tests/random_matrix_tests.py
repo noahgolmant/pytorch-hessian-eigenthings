@@ -7,8 +7,11 @@ import argparse
 import numpy as np
 import torch
 from hessian_eigenthings.power_iter import LambdaOperator, deflated_power_iteration
+from hessian_eigenthings.lanczos import lanczos
 import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
+
+from skeletor.utils import seed_all
 
 parser = argparse.ArgumentParser(description='power iteration tester')
 
@@ -22,10 +25,15 @@ parser.add_argument('--momentum', default=0, type=float,
                     help='acceleration term for stochastic power iter')
 parser.add_argument('--num_trials', default=30, type=int,
                     help='number of matrices per test')
+parser.add_argument('--seed', default=1, type=int)
+parser.add_argument('--mode', default='power_iter',
+                    choices=['power_iter', 'lanczos'])
 args = parser.parse_args()
 
+seed_all(args.seed)
 
-def test_matrix(mat, ntrials):
+
+def test_matrix(mat, ntrials, mode):
     """
     Tests the accuracy of deflated power iteration on the given matrix.
     It computes the average percent eigenval error and eigenvec simliartiy err
@@ -38,16 +46,15 @@ def test_matrix(mat, ntrials):
     eigenvals = []
     eigenvecs = []
     for _ in range(ntrials):
-        est_eigenvals, est_eigenvecs = deflated_power_iteration(
+        if mode == 'lanczos':
+            method = lanczos
+        else:
+            method = deflated_power_iteration
+        est_eigenvals, est_eigenvecs = method(
             op,
             num_eigenthings=args.num_eigenthings,
-            power_iter_steps=args.power_iter_steps,
-            momentum=args.momentum,
             use_gpu=False
         )
-        est_eigenvals = np.array(est_eigenvals)
-        est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
-
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
         est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
@@ -68,7 +75,6 @@ def test_matrix(mat, ntrials):
     plt.subplot(1, 2, 1)
     plt.title('Eigenvalues')
     plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label='True Eigenvals')
-    plt.ylim(0, 50)
     plot_eigenval_estimates(eigenvals, label='Estimates')
     plt.legend()
     # Plot eigenvector L2 norm error
@@ -87,12 +93,12 @@ def generate_wishart(n, offset=0.0):
     matrix = np.random.random(size=(n, n)).astype(float)
     matrix = matrix.transpose().dot(matrix)
     matrix = matrix + offset * np.eye(n)
-    return matrix
+    return (1./n) * matrix
 
 
 def test_wishart():
     m = generate_wishart(args.matrix_dim)
-    test_matrix(m, args.num_trials)
+    test_matrix(m, args.num_trials, mode=args.mode)
 
 
 if __name__ == '__main__':

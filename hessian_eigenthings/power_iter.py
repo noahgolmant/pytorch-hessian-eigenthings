@@ -67,9 +67,9 @@ def deflated_power_iteration(operator,
         current_op = LambdaOperator(_new_op_fn, operator.size)
         prev_vec = eigenvec
         eigenvals.append(eigenval)
-        eigenvecs.append(eigenvec.cpu())
+        eigenvecs.append(eigenvec.cpu().numpy())
 
-    return eigenvals, eigenvecs
+    return np.array(eigenvals), np.array(eigenvecs)
 
 
 def power_iteration(operator, steps=20, error_threshold=1e-4,
