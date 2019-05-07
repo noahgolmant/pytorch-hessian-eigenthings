@@ -3,7 +3,8 @@ This module defines a linear operator to compute the hessian-vector product
 for a given pytorch model using subsampled data.
 """
 import torch
-from .power_iter import Operator, deflated_power_iteration
+from hessian_eigenthings.power_iter import Operator, deflated_power_iteration
+from hessian_eigenthings.lanczos import lanczos
 
 
 class HVPOperator(Operator):
@@ -93,22 +94,34 @@ class HVPOperator(Operator):
 
 def compute_hessian_eigenthings(model, dataloader, loss,
                                 num_eigenthings=10,
-                                power_iter_steps=20,
-                                power_iter_err_threshold=1e-4,
-                                momentum=0.0,
+                                mode='power_iter',
                                 use_gpu=True,
-                                max_samples=512):
+                                max_samples=512,
+                                **kwargs):
     """
     Computes the top `num_eigenthings` eigenvalues and eigenvecs
     for the hessian of the given model by using subsampled power iteration
     with deflation and the hessian-vector product
+
+    Parameters
+    ---------------
+
+    mode : str ['power_iter', 'lanczos']
     """
     hvp_operator = HVPOperator(model, dataloader, loss, use_gpu=use_gpu,
                                max_samples=max_samples)
-    eigenvals, eigenvecs = deflated_power_iteration(hvp_operator,
-                                                    num_eigenthings,
-                                                    power_iter_steps,
-                                                    power_iter_err_threshold,
-                                                    momentum=momentum,
-                                                    use_gpu=use_gpu)
+    eigenvals, eigenvecs = None, None
+    if mode == 'power_iter':
+        eigenvals, eigenvecs = deflated_power_iteration(hvp_operator,
+                                                        num_eigenthings,
+                                                        use_gpu=use_gpu,
+                                                        **kwargs)
+    elif mode == 'lanczos':
+        eigenvals, eigenvecs = lanczos(hvp_operator,
+                                       num_eigenthings,
+                                       use_gpu=use_gpu,
+                                       **kwargs)
+    else:
+        raise ValueError("Unsupported mode %s (must be power_iter or lanczos)"
+                         % mode)
     return eigenvals, eigenvecs
