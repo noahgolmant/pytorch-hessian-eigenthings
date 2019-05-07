@@ -45,7 +45,10 @@ def lanczos(operator,
     eigenvectors : np.ndarray
         array containing `num_eigenthings` eigenvectors of the operator
     """
-    size = operator.size[0]
+    if isinstance(operator.size, int):
+        size = operator.size
+    else:
+        size = operator.size[0]
     shape = (size, size)
 
     if num_lanczos_vectors is None:

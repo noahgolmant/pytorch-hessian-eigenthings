@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(description='power iteration tester')
 
 parser.add_argument('--matrix_dim', type=int, default=100,
                     help='number of rows/columns in matrix')
-parser.add_argument('--num_eigenthings', type=int, default=100,
+parser.add_argument('--num_eigenthings', type=int, default=10,
                     help='number of eigenvalues to compute')
 parser.add_argument('--power_iter_steps', default=20, type=int,
                     help='number of steps of power iteration')
