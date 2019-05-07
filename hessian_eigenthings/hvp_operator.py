@@ -18,7 +18,7 @@ class HVPOperator(Operator):
     """
 
     def __init__(self, model, dataloader, criterion, use_gpu=True,
-                 max_samples=512):
+                 full_dataset=True, max_samples=512):
         size = int(sum(p.numel() for p in model.parameters()))
         super(HVPOperator, self).__init__(size)
         self.grad_vec = torch.zeros(size)
@@ -30,6 +30,7 @@ class HVPOperator(Operator):
         self.dataloader_iter = iter(dataloader)
         self.criterion = criterion
         self.use_gpu = use_gpu
+        self.full_dataset = full_dataset
         self.max_samples = max_samples
 
     def apply(self, vec):
@@ -39,7 +40,10 @@ class HVPOperator(Operator):
         """
         # compute original gradient, tracking computation graph
         self.zero_grad()
-        grad_vec = self.prepare_grad()
+        if self.full_dataset:
+            grad_vec = self.prepare_full_grad()
+        else:
+            grad_vec = self.prepare_grad()
         self.zero_grad()
         # take the second gradient
         grad_grad = torch.autograd.grad(grad_vec, self.model.parameters(),
@@ -57,6 +61,22 @@ class HVPOperator(Operator):
         for p in self.model.parameters():
             if p.grad is not None:
                 p.grad.data.zero_()
+
+    def prepare_full_grad(self):
+        """
+        Compute gradient w.r.t loss over all parameters, where loss
+        is computed over the full dataloader
+        """
+        grad_vec = None
+        n = len(self.dataloader)
+        for _ in range(n):
+            batch_grad = self.prepare_grad()
+            if grad_vec is not None:
+                grad_vec += batch_grad
+            else:
+                grad_vec = batch_grad
+        self.grad_vec = grad_vec / n
+        return self.grad_vec
 
     def prepare_grad(self):
         """
@@ -94,6 +114,7 @@ class HVPOperator(Operator):
 
 def compute_hessian_eigenthings(model, dataloader, loss,
                                 num_eigenthings=10,
+                                full_dataset=True,
                                 mode='power_iter',
                                 use_gpu=True,
                                 max_samples=512,
@@ -106,9 +127,31 @@ def compute_hessian_eigenthings(model, dataloader, loss,
     Parameters
     ---------------
 
+    model : Module
+        pytorch model for this netowrk
+    dataloader : torch.data.DataLoader
+        dataloader with x,y pairs for which we compute the loss.
+    loss : torch.nn.modules.Loss | torch.nn.functional criterion
+        loss function to differentiate through
+    num_eigenthings : int
+        number of eigenvalues/eigenvecs to compute. computed in order of
+        decreasing eigenvalue magnitude.
+    full_dataset : boolean
+        if true, each power iteration call evaluates the gradient over the
+        whole dataset.
     mode : str ['power_iter', 'lanczos']
+        which backend to use to compute the top eigenvalues.
+    use_gpu:
+        if true, attempt to use cuda for all lin alg computatoins
+    max_samples:
+        the maximum number of samples that can fit on-memory. used
+        to accumulate gradients for large batches.
+    **kwargs:
+        contains additional parameters passed onto lanczos or power_iter.
     """
-    hvp_operator = HVPOperator(model, dataloader, loss, use_gpu=use_gpu,
+    hvp_operator = HVPOperator(model, dataloader, loss,
+                               use_gpu=use_gpu,
+                               full_dataset=full_dataset,
                                max_samples=max_samples)
     eigenvals, eigenvecs = None, None
     if mode == 'power_iter':

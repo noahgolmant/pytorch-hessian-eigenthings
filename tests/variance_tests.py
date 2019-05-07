@@ -58,9 +58,6 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
             power_iter_err_threshold=1e-5,
             momentum=0,
             use_gpu=False)
-        est_eigenvals = np.array(est_eigenvals)
-        est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
-
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
         est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
@@ -208,8 +205,8 @@ def test_fixed_mini(model, criterion, real_hessian, x, y, bs=10, ntrials=10):
 if __name__ == '__main__':
     indim = 100
     outdim = 1
-    nsamples = 100
-    ntrials = 10
+    nsamples = 10
+    ntrials = 1
     bs = 10
 
     model = torch.nn.Linear(indim, outdim)
@@ -219,5 +216,5 @@ if __name__ == '__main__':
     y = torch.rand((nsamples, outdim))
 
     hessian = test_full_hessian(model, criterion, x, y, ntrials=ntrials)
-    test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
+    # test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
     # test_fixed_mini(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
