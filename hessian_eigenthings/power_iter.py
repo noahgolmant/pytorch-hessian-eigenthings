@@ -38,7 +38,8 @@ def deflated_power_iteration(operator,
                              power_iter_steps=20,
                              power_iter_err_threshold=1e-4,
                              momentum=0.0,
-                             use_gpu=True):
+                             use_gpu=True,
+                             to_numpy=True):
     """
     Compute top k eigenvalues by repeatedly subtracting out dyads
     operator: linear operator that gives us access to matrix vector product
@@ -67,9 +68,20 @@ def deflated_power_iteration(operator,
         current_op = LambdaOperator(_new_op_fn, operator.size)
         prev_vec = eigenvec
         eigenvals.append(eigenval)
-        eigenvecs.append(eigenvec.cpu().numpy())
+        eigenvec = eigenvec.cpu()
+        if to_numpy:
+            eigenvecs.append(eigenvec.numpy())
+        else:
+            eigenvecs.append(eigenvec)
 
-    return np.array(eigenvals), np.array(eigenvecs)
+    eigenvals = np.array(eigenvals)
+    eigenvecs = np.array(eigenvecs)
+
+    # sort them in descending order
+    sorted_inds = np.argsort(eigenvals)
+    eigenvals = eigenvals[sorted_inds][::-1]
+    eigenvecs = eigenvecs[sorted_inds][::-1]
+    return eigenvals, eigenvecs
 
 
 def power_iteration(operator, steps=20, error_threshold=1e-4,
