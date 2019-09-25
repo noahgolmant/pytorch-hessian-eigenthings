@@ -25,6 +25,7 @@ class LambdaOperator(Operator):
     """
     Linear operator based on a provided lambda function
     """
+
     def __init__(self, apply_fn, size):
         super(LambdaOperator, self).__init__(size)
         self.apply_fn = apply_fn
@@ -33,13 +34,15 @@ class LambdaOperator(Operator):
         return self.apply_fn(x)
 
 
-def deflated_power_iteration(operator,
-                             num_eigenthings=10,
-                             power_iter_steps=20,
-                             power_iter_err_threshold=1e-4,
-                             momentum=0.0,
-                             use_gpu=True,
-                             to_numpy=True):
+def deflated_power_iteration(
+    operator,
+    num_eigenthings=10,
+    power_iter_steps=20,
+    power_iter_err_threshold=1e-4,
+    momentum=0.0,
+    use_gpu=True,
+    to_numpy=True,
+):
     """
     Compute top k eigenvalues by repeatedly subtracting out dyads
     operator: linear operator that gives us access to matrix vector product
@@ -57,14 +60,18 @@ def deflated_power_iteration(operator,
         return val * vec.dot(x) * vec
 
     for _ in range(num_eigenthings):
-        eigenval, eigenvec = power_iteration(current_op, power_iter_steps,
-                                             power_iter_err_threshold,
-                                             momentum=momentum,
-                                             use_gpu=use_gpu,
-                                             init_vec=prev_vec)
+        eigenval, eigenvec = power_iteration(
+            current_op,
+            power_iter_steps,
+            power_iter_err_threshold,
+            momentum=momentum,
+            use_gpu=use_gpu,
+            init_vec=prev_vec,
+        )
 
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return op.apply(x) - _deflate(x, val, vec)
+
         current_op = LambdaOperator(_new_op_fn, operator.size)
         prev_vec = eigenvec
         eigenvals.append(eigenval)
@@ -84,9 +91,9 @@ def deflated_power_iteration(operator,
     return eigenvals, eigenvecs
 
 
-def power_iteration(operator, steps=20, error_threshold=1e-4,
-                    momentum=0.0, use_gpu=True,
-                    init_vec=None):
+def power_iteration(
+    operator, steps=20, error_threshold=1e-4, momentum=0.0, use_gpu=True, init_vec=None
+):
     """
     Compute dominant eigenvalue/eigenvector of a matrix
     operator: linear Operator giving us matrix-vector product access
@@ -102,7 +109,7 @@ def power_iteration(operator, steps=20, error_threshold=1e-4,
     if use_gpu:
         vec = vec.cuda()
 
-    prev_lambda = 0.
+    prev_lambda = 0.0
     prev_vec = torch.zeros_like(vec)
     for _ in range(steps):
         new_vec = operator.apply(vec) - momentum * prev_vec
