@@ -5,6 +5,8 @@ to compute the top eigenvalues and eigenvectors of a linear operator
 import numpy as np
 import torch
 
+from hessian_eigenthings.utils import log, progress_bar
+
 
 class Operator:
     """
@@ -59,7 +61,9 @@ def deflated_power_iteration(
     def _deflate(x, val, vec):
         return val * vec.dot(x) * vec
 
-    for _ in range(num_eigenthings):
+    log("beginning deflated power iteration")
+    for i in range(num_eigenthings):
+        log("computing eigenvalue/vector %d of %d" % (i + 1, num_eigenthings))
         eigenval, eigenvec = power_iteration(
             current_op,
             power_iter_steps,
@@ -68,6 +72,7 @@ def deflated_power_iteration(
             use_gpu=use_gpu,
             init_vec=prev_vec,
         )
+        log("eigenvalue %d: %.4f" % (i + 1, eigenval))
 
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return op.apply(x) - _deflate(x, val, vec)
@@ -111,14 +116,14 @@ def power_iteration(
 
     prev_lambda = 0.0
     prev_vec = torch.zeros_like(vec)
-    for _ in range(steps):
+    for i in range(steps):
         new_vec = operator.apply(vec) - momentum * prev_vec
         prev_vec = vec / (torch.norm(vec) + 1e-6)
-
         lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda
         vec = new_vec.detach() / torch.norm(new_vec)
         error = np.abs(diff / lambda_estimate)
+        progress_bar(i, steps, "power iter error: %.4f" % error)
         if error < error_threshold:
             return lambda_estimate, vec
         prev_lambda = lambda_estimate
