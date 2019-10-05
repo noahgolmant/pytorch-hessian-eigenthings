@@ -115,14 +115,25 @@ def power_iteration(
         vec = vec.cuda()
 
     prev_lambda = 0.0
-    prev_vec = torch.zeros_like(vec)
+    prev_vec = torch.randn_like(vec)
     for i in range(steps):
-        new_vec = operator.apply(vec) - momentum * prev_vec
         prev_vec = vec / (torch.norm(vec) + 1e-6)
+        print(prev_lambda, prev_vec)
+        print(torch.norm(prev_vec))
+        new_vec = operator.apply(vec) - momentum * prev_vec
+        # need to handle case where we end up in the nullspace of the operator.
+        # in this case, we are done.
+        if torch.sum(new_vec).item() == 0.0:
+            return 0.0, new_vec
+        print(new_vec)
+        print(prev_vec)
         lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda
         vec = new_vec.detach() / torch.norm(new_vec)
-        error = np.abs(diff / lambda_estimate)
+        if lambda_estimate == 0.0:  # for low-rank
+            error = 1.0
+        else:
+            error = np.abs(diff / lambda_estimate)
         progress_bar(i, steps, "power iter error: %.4f" % error)
         if error < error_threshold:
             return lambda_estimate, vec
