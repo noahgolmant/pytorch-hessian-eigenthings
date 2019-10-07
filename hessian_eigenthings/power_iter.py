@@ -118,15 +118,11 @@ def power_iteration(
     prev_vec = torch.randn_like(vec)
     for i in range(steps):
         prev_vec = vec / (torch.norm(vec) + 1e-6)
-        print(prev_lambda, prev_vec)
-        print(torch.norm(prev_vec))
         new_vec = operator.apply(vec) - momentum * prev_vec
         # need to handle case where we end up in the nullspace of the operator.
         # in this case, we are done.
         if torch.sum(new_vec).item() == 0.0:
             return 0.0, new_vec
-        print(new_vec)
-        print(prev_vec)
         lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda
         vec = new_vec.detach() / torch.norm(new_vec)
