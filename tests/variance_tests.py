@@ -15,20 +15,41 @@ from utils import plot_eigenval_estimates, plot_eigenvec_errors
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
+from hessian_eigenthings.utils import progress_bar
+
 
 def get_full_hessian(loss_grad, model):
     # from https://discuss.pytorch.org/t/compute-the-hessian-matrix-of-a-network/15270/3
     cnt = 0
-    for g in loss_grad:
-        g_vector = g.contiguous().view(-1) if cnt == 0 else torch.cat([g_vector, g.contiguous().view(-1)])
+    loss_grad = list(loss_grad)
+    for i, g in enumerate(loss_grad):
+        progress_bar(
+            i,
+            len(loss_grad),
+            "flattening to full gradient: %d of %d" % (i, len(loss_grad)),
+        )
+        g_vector = (
+            g.contiguous().view(-1)
+            if cnt == 0
+            else torch.cat([g_vector, g.contiguous().view(-1)])
+        )
         cnt = 1
-    l = g_vector.size(0)
-    hessian = torch.zeros(l, l)
-    for idx in range(l):
-        grad2rd = torch.autograd.grad(g_vector[idx], model.parameters(), create_graph=True)
+    hessian_size = g_vector.size(0)
+    hessian = torch.zeros(hessian_size, hessian_size)
+    for idx in range(hessian_size):
+        progress_bar(
+            idx, hessian_size, "full hessian columns: %d of %d" % (idx, hessian_size)
+        )
+        grad2rd = torch.autograd.grad(
+            g_vector[idx], model.parameters(), create_graph=True
+        )
         cnt = 0
         for g in grad2rd:
-            g2 = g.contiguous().view(-1) if cnt == 0 else torch.cat([g2, g.contiguous().view(-1)])
+            g2 = (
+                g.contiguous().view(-1)
+                if cnt == 0
+                else torch.cat([g2, g.contiguous().view(-1)])
+            )
             cnt = 1
         hessian[idx] = g2
     return hessian.cpu().data.numpy()
@@ -57,7 +78,8 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
             power_iter_steps=10,
             power_iter_err_threshold=1e-5,
             momentum=0,
-            use_gpu=False)
+            use_gpu=False,
+        )
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
         est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
@@ -74,18 +96,18 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
     real_eigenvecs = np.array(real_eigenvecs)[real_inds][::-1]
 
     # Plot eigenvalue error
-    plt.suptitle('Hessian eigendecomposition errors: %d trials' % ntrials)
+    plt.suptitle("Hessian eigendecomposition errors: %d trials" % ntrials)
     plt.subplot(1, 2, 1)
-    plt.title('Eigenvalues')
-    plt.plot(list(range(nparams)), real_eigenvals, label='True Eigenvals')
-    plot_eigenval_estimates(eigenvals, label='Estimates')
+    plt.title("Eigenvalues")
+    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals")
+    plot_eigenval_estimates(eigenvals, label="Estimates")
     plt.legend()
     # Plot eigenvector L2 norm error
     plt.subplot(1, 2, 2)
-    plt.title('Eigenvector cosine simliarity')
-    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label='Estimates')
+    plt.title("Eigenvector cosine simliarity")
+    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label="Estimates")
     plt.legend()
-    plt.savefig('full.png')
+    plt.savefig("full.png")
     plt.clf()
     return real_hessian
 
@@ -109,7 +131,8 @@ def test_stochastic_hessian(model, criterion, real_hessian, x, y, bs=10, ntrials
             power_iter_steps=10,
             power_iter_err_threshold=1e-5,
             momentum=0,
-            use_gpu=False)
+            use_gpu=False,
+        )
         est_eigenvals = np.array(est_eigenvals)
         est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
 
@@ -129,25 +152,24 @@ def test_stochastic_hessian(model, criterion, real_hessian, x, y, bs=10, ntrials
     real_eigenvecs = np.array(real_eigenvecs)[real_inds][::-1]
 
     # Plot eigenvalue error
-    plt.suptitle('Stochastic Hessian eigendecomposition errors: %d trials' % ntrials)
+    plt.suptitle("Stochastic Hessian eigendecomposition errors: %d trials" % ntrials)
     plt.subplot(1, 2, 1)
-    plt.title('Eigenvalues')
-    plt.plot(list(range(nparams)), real_eigenvals, label='True Eigenvals')
-    plot_eigenval_estimates(eigenvals, label='Estimates')
+    plt.title("Eigenvalues")
+    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals")
+    plot_eigenval_estimates(eigenvals, label="Estimates")
     plt.legend()
     # Plot eigenvector L2 norm error
     plt.subplot(1, 2, 2)
-    plt.title('Eigenvector cosine simliarity')
-    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label='Estimates')
+    plt.title("Eigenvector cosine simliarity")
+    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label="Estimates")
     plt.legend()
-    plt.savefig('stochastic.png')
+    plt.savefig("stochastic.png")
     plt.clf()
 
 
 def test_fixed_mini(model, criterion, real_hessian, x, y, bs=10, ntrials=10):
     x = x[:bs]
     y = y[:bs]
-
 
     samples = [(x_i, y_i) for x_i, y_i in zip(x, y)]
     # full dataset
@@ -164,11 +186,12 @@ def test_fixed_mini(model, criterion, real_hessian, x, y, bs=10, ntrials=10):
             dataloader,
             criterion,
             num_eigenthings=nparams,
-            mode='lanczos',
+            mode="lanczos",
             power_iter_steps=10,
             power_iter_err_threshold=1e-5,
             momentum=0,
-            use_gpu=False)
+            use_gpu=False,
+        )
         est_eigenvals = np.array(est_eigenvals)
         est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
 
@@ -188,21 +211,23 @@ def test_fixed_mini(model, criterion, real_hessian, x, y, bs=10, ntrials=10):
     real_eigenvecs = np.array(real_eigenvecs)[real_inds][::-1]
 
     # Plot eigenvalue error
-    plt.suptitle('Fixed mini-batch Hessian eigendecomposition errors: %d trials' % ntrials)
+    plt.suptitle(
+        "Fixed mini-batch Hessian eigendecomposition errors: %d trials" % ntrials
+    )
     plt.subplot(1, 2, 1)
-    plt.title('Eigenvalues')
-    plt.plot(list(range(nparams)), real_eigenvals, label='True Eigenvals')
-    plot_eigenval_estimates(eigenvals, label='Estimates')
+    plt.title("Eigenvalues")
+    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals")
+    plot_eigenval_estimates(eigenvals, label="Estimates")
     plt.legend()
     # Plot eigenvector L2 norm error
     plt.subplot(1, 2, 2)
-    plt.title('Eigenvector cosine simliarity')
-    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label='Estimates')
+    plt.title("Eigenvector cosine simliarity")
+    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label="Estimates")
     plt.legend()
-    plt.savefig('fixed.png')
+    plt.savefig("fixed.png")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     indim = 100
     outdim = 1
     nsamples = 10
