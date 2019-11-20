@@ -27,14 +27,14 @@ eigenvals, eigenvecs = compute_hessian_eigenthings(model, dataloader,
                                                    loss, num_eigenthings)
 ```
 
-This also includes a more general power iteration with deflation implementation in `power_iter.py`.
+This also includes a more general power iteration with deflation implementation in `power_iter.py`. `lanczos.py` calls a [`scipy` hook](https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html) to a battle-tested ARPACK implementation.
 
 ## Citing this work
 If you find this repo useful and would like to cite it in a publication, here is a BibTeX entry:
 
     @misc{hessian-eigenthings,
         author       = {Noah Golmant, Zhewei Yao, Amir Gholami, Michael Mahoney, Joseph Gonzalez},
-        title        = {{pytorch-hessian-eigentings: efficient PyTorch Hessian eigendecomposition}},
+        title        = {pytorch-hessian-eigentings: efficient PyTorch Hessian eigendecomposition},
         month        = oct,
         year         = 2018,
         version      = {1.0},
