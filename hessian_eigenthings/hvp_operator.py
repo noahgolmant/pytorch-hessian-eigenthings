@@ -14,7 +14,10 @@ class HVPOperator(Operator):
     dataloader: pytorch dataloader that we get examples from to compute grads
     loss:   Loss function to descend (e.g. F.cross_entropy)
     use_gpu: use cuda or not
+    full_dataset: bool
+        if true, average HVP over all mini-batches in dataloader.
     max_samples: max number of examples per batch using all GPUs.
+                 if dataloader batch_size is larger, peforms gradient chunking.
     """
 
     def __init__(
@@ -43,7 +46,7 @@ class HVPOperator(Operator):
     def apply(self, vec):
         """
         Returns H*vec where H is the hessian of the loss w.r.t.
-        the vectorized model parameters
+        the vectorized model parameters.
         """
         if self.full_dataset:
             return self._apply_full(vec)
@@ -51,9 +54,12 @@ class HVPOperator(Operator):
             return self._apply_batch(vec)
 
     def _apply_batch(self, vec):
+        """
+        compute the HVP over a single mini-batch in the dataloader.
+        """
         # compute original gradient, tracking computation graph
         self.zero_grad()
-        grad_vec = self.prepare_grad()
+        grad_vec = self._prepare_grad()
         self.zero_grad()
         # take the second gradient
         grad_grad = torch.autograd.grad(
@@ -64,6 +70,9 @@ class HVPOperator(Operator):
         return hessian_vec_prod
 
     def _apply_full(self, vec):
+        """
+        compute the HVP over the entire dataloader (all mini-batches).
+        """
         n = len(self.dataloader)
         hessian_vec_prod = None
         for _ in range(n):
@@ -82,9 +91,9 @@ class HVPOperator(Operator):
             if p.grad is not None:
                 p.grad.data.zero_()
 
-    def prepare_grad(self):
+    def _prepare_grad(self):
         """
-        Compute gradient w.r.t loss over all parameters and vectorize
+        Compute gradient w.r.t loss over all parameters and vectorize.
         """
         try:
             all_inputs, all_targets = next(self.dataloader_iter)
@@ -98,6 +107,13 @@ class HVPOperator(Operator):
 
         input_chunks = all_inputs.chunk(num_chunks)
         target_chunks = all_targets.chunk(num_chunks)
+
+        """
+        this loop breaks the mini-batch into mini-mini-batches of size
+        `self.max_samples`. this lets us optimize as though we have an
+        arbitrarily large batch size.
+            - caution: batch norm behavior may be different here. be careful!
+        """
         for input, target in zip(input_chunks, target_chunks):
             if self.use_gpu:
                 input = input.cuda()
@@ -126,7 +142,7 @@ def compute_hessian_eigenthings(
     mode="power_iter",
     use_gpu=True,
     max_samples=512,
-    **kwargs
+    compute_density=False ** kwargs,
 ):
     """
     Computes the top `num_eigenthings` eigenvalues and eigenvecs
@@ -136,7 +152,7 @@ def compute_hessian_eigenthings(
     Parameters
     ---------------
 
-    model : Module
+    model : torch.nn.Module
         pytorch model for this netowrk
     dataloader : torch.data.DataLoader
         dataloader with x,y pairs for which we compute the loss.
@@ -150,13 +166,29 @@ def compute_hessian_eigenthings(
         whole dataset.
     mode : str ['power_iter', 'lanczos']
         which backend to use to compute the top eigenvalues.
-    use_gpu:
+    use_gpu: bool
         if true, attempt to use cuda for all lin alg computatoins
-    max_samples:
+    max_samples: int
         the maximum number of samples that can fit on-memory. used
         to accumulate gradients for large batches.
+
+        if the `dataloader` batch_size is larger than max_samples, this
+        performs gradient chunking to simulate training with larger batch sizes.
+        see `hessian_eigenthings.hvp_operator.HVPOperator._prepare_grad` for details.
+
+    compute_density: : bool
+        if true, use spectral density estimation via KDE to get a density
+        estimate of the eigenvalues.
     **kwargs:
         contains additional parameters passed onto lanczos or power_iter.
+
+    returns:
+    ----------------------
+    eigenvals: np.ndarray
+        1-D array of eigenvalues sorted in descending order.
+    eigenvecs: np.ndarray
+        2-D array of eigenvectors, with eigenvecs[i] corresponding to
+        i-th eigenvalue.
     """
     hvp_operator = HVPOperator(
         model,
@@ -177,4 +209,5 @@ def compute_hessian_eigenthings(
         )
     else:
         raise ValueError("Unsupported mode %s (must be power_iter or lanczos)" % mode)
+
     return eigenvals, eigenvecs

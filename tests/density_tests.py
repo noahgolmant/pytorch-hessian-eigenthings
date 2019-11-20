@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from hessian_eigenthings.power_iter import LambdaOperator, deflated_power_iteration
 from hessian_eigenthings.lanczos import lanczos
+from hessian_eigenthings.spectral_density import spectral_density
 import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
 
@@ -53,44 +54,70 @@ def test_matrix(mat, ntrials, mode):
     real_eigenvals, true_eigenvecs = np.linalg.eig(mat)
     real_eigenvecs = [true_eigenvecs[:, i] for i in range(len(real_eigenvals))]
 
-    eigenvals = []
-    eigenvecs = []
-    for _ in range(ntrials):
-        if mode == "lanczos":
-            method = lanczos
-        else:
-            method = deflated_power_iteration
-        est_eigenvals, est_eigenvecs = method(
-            op, num_eigenthings=args.num_eigenthings, use_gpu=False
-        )
-        est_inds = np.argsort(est_eigenvals)
-        est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
-        est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
+    max_support = 1.0
+    density, support = spectral_density(
+        real_eigenvals,
+        real_eigenvecs,
+        min_eigenvalue_support=0,
+        max_eigenvalue_support=max_support,
+        num_support_points=1e5,
+        sigma_squared=1e-5,
+    )
+    fix, ax = plt.subplots(figsize=(15, 7))
 
-        eigenvals.append(est_eigenvals)
-        eigenvecs.append(est_eigenvecs)
+    # density /= sum(density)
 
-    eigenvals = np.array(eigenvals)
-    eigenvecs = np.array(eigenvecs)
+    ax.plot(support, density, color="r", label="density")
+    ax.hist(real_eigenvals, bins=100, range=(0, max_support), normed=True)
 
-    # truncate estimates
-    real_inds = np.argsort(real_eigenvals)
-    real_eigenvals = np.array(real_eigenvals)[real_inds][-args.num_eigenthings :][::-1]
-    real_eigenvecs = np.array(real_eigenvecs)[real_inds][-args.num_eigenthings :][::-1]
-
-    # Plot eigenvalue error
-    plt.suptitle("Random Matrix Eigendecomposition Errors: %d trials" % ntrials)
-    plt.subplot(1, 2, 1)
-    plt.title("Eigenvalues")
-    plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label="True Eigenvals")
-    plot_eigenval_estimates(eigenvals, label="Estimates")
+    # ax.plot(support, 10 * real_eigenvals, color="b", label="real")
+    ax.set_xlabel("Eigenvalue")
+    ax.set_ylabel("unnormalized density")
+    ax.set_title("wishart matrix eigenvalue density estimation")
     plt.legend()
-    # Plot eigenvector L2 norm error
-    plt.subplot(1, 2, 2)
-    plt.title("Eigenvector cosine simliarity")
-    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label="Estimates")
-    plt.legend()
+
     plt.show()
+
+    # eigenvals = []
+    # eigenvecs = []
+    # for _ in range(ntrials):
+    # if mode == 'lanczos':
+    # method = lanczos
+    # else:
+    # method = deflated_power_iteration
+    # est_eigenvals, est_eigenvecs = method(
+    # op,
+    # num_eigenthings=args.num_eigenthings,
+    # use_gpu=False
+    # )
+    # est_inds = np.argsort(est_eigenvals)
+    # est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
+    # est_eigenvecs = np.array(est_eigenvecs)[est_inds][::-1]
+
+    # eigenvals.append(est_eigenvals)
+    # eigenvecs.append(est_eigenvecs)
+
+    # eigenvals = np.array(eigenvals)
+    # eigenvecs = np.array(eigenvecs)
+
+    # # truncate estimates
+    # real_inds = np.argsort(real_eigenvals)
+    # real_eigenvals = np.array(real_eigenvals)[real_inds][-args.num_eigenthings:][::-1]
+    # real_eigenvecs = np.array(real_eigenvecs)[real_inds][-args.num_eigenthings:][::-1]
+
+    # # Plot eigenvalue error
+    # plt.suptitle('Random Matrix Eigendecomposition Errors: %d trials' % ntrials)
+    # plt.subplot(1, 2, 1)
+    # plt.title('Eigenvalues')
+    # plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label='True Eigenvals')
+    # plot_eigenval_estimates(eigenvals, label='Estimates')
+    # plt.legend()
+    # # Plot eigenvector L2 norm error
+    # plt.subplot(1, 2, 2)
+    # plt.title('Eigenvector cosine simliarity')
+    # plot_eigenvec_errors(real_eigenvecs, eigenvecs, label='Estimates')
+    # plt.legend()
+    # plt.show()
 
 
 def generate_wishart(n, offset=0.0):
