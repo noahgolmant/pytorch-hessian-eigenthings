@@ -3,8 +3,14 @@ This module defines a linear operator to compute the hessian-vector product
 for a given pytorch model using subsampled data.
 """
 import torch
-from hessian_eigenthings.power_iter import Operator, deflated_power_iteration
+
+
+import hessian_eigenthings.power_iter as power_iter
+import hessian_eigenthings.utils as utils
+
 from hessian_eigenthings.lanczos import lanczos
+from hessian_eigenthings.operator import Operator
+
 
 
 class HVPOperator(Operator):
@@ -23,6 +29,7 @@ class HVPOperator(Operator):
         dataloader,
         criterion,
         use_gpu=True,
+        fp16=False,
         full_dataset=True,
         max_samples=256,
     ):
@@ -37,6 +44,7 @@ class HVPOperator(Operator):
         self.dataloader_iter = iter(dataloader)
         self.criterion = criterion
         self.use_gpu = use_gpu
+        self.fp16 = fp16
         self.full_dataset = full_dataset
         self.max_samples = max_samples
 
@@ -61,6 +69,7 @@ class HVPOperator(Operator):
         )
         # concatenate the results over the different components of the network
         hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in grad_grad])
+        hessian_vec_prod = utils.maybe_fp16(hessian_vec_prod, self.fp16)
         return hessian_vec_prod
 
     def _apply_full(self, vec):
@@ -112,6 +121,7 @@ class HVPOperator(Operator):
                 grad_vec += torch.cat([g.contiguous().view(-1) for g in grad_dict])
             else:
                 grad_vec = torch.cat([g.contiguous().view(-1) for g in grad_dict])
+            grad_vec = utils.maybe_fp16(grad_vec, self.fp16)
         grad_vec /= num_chunks
         self.grad_vec = grad_vec
         return self.grad_vec
@@ -125,7 +135,8 @@ def compute_hessian_eigenthings(
     full_dataset=True,
     mode="power_iter",
     use_gpu=True,
-    max_samples=512,
+    fp16=False,
+    max_samples=2**16,
     **kwargs
 ):
     """
@@ -149,9 +160,12 @@ def compute_hessian_eigenthings(
         if true, each power iteration call evaluates the gradient over the
         whole dataset.
     mode : str ['power_iter', 'lanczos']
-        which backend to use to compute the top eigenvalues.
+        which backend algorithm to use to compute the top eigenvalues.
     use_gpu:
         if true, attempt to use cuda for all lin alg computatoins
+    fp16: bool
+        if true, store eigenvectors, gradients, etc. in fp16.
+        [need to test if this is numerically stable]
     max_samples:
         the maximum number of samples that can fit on-memory. used
         to accumulate gradients for large batches.
@@ -168,12 +182,12 @@ def compute_hessian_eigenthings(
     )
     eigenvals, eigenvecs = None, None
     if mode == "power_iter":
-        eigenvals, eigenvecs = deflated_power_iteration(
-            hvp_operator, num_eigenthings, use_gpu=use_gpu, **kwargs
+        eigenvals, eigenvecs = power_iter.deflated_power_iteration(
+            hvp_operator, num_eigenthings, use_gpu=use_gpu, fp16=fp16, **kwargs
         )
     elif mode == "lanczos":
         eigenvals, eigenvecs = lanczos(
-            hvp_operator, num_eigenthings, use_gpu=use_gpu, **kwargs
+            hvp_operator, num_eigenthings, use_gpu=use_gpu, fp16=fp16, **kwargs
         )
     else:
         raise ValueError("Unsupported mode %s (must be power_iter or lanczos)" % mode)

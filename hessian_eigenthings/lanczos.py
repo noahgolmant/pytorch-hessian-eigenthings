@@ -15,6 +15,7 @@ def lanczos(
     num_lanczos_vectors=None,
     init_vec=None,
     use_gpu=False,
+    fp16=False,
 ):
     """
     Use the scipy.sparse.linalg.eigsh hook to the ARPACK lanczos algorithm
@@ -39,6 +40,8 @@ def lanczos(
         if None, use random tensor. this is the init vec for arnoldi updates.
     use_gpu: bool
         if true, use cuda tensors.
+    fp16: bool
+        if true, keep operator input/output in fp16 instead of fp32.
 
     Returns
     ----------------
@@ -62,9 +65,13 @@ def lanczos(
 
     def _scipy_apply(x):
         x = torch.from_numpy(x)
+        x = x.half() if fp16 else x.float()
         if use_gpu:
             x = x.cuda()
-        return operator.apply(x.float()).cpu().numpy()
+        out = operator.apply(x).cpu().numpy()
+        if fp16:
+            out = out.half()
+        return out
 
     scipy_op = ScipyLinearOperator(shape, _scipy_apply)
     if init_vec is None:

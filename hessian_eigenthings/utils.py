@@ -12,6 +12,9 @@ def log(msg):
     # TODO make this an actual logger lol
     print("[hessian_eigenthings] " + str(msg))
 
+def maybe_fp16(vec, fp16):
+    return vec.half() if fp16 else vec.float()
+
 
 last_time = time.time()
 begin_time = last_time

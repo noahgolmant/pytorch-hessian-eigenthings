@@ -11,7 +11,6 @@ from hessian_eigenthings.lanczos import lanczos
 import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
 
-from skeletor.utils import seed_all
 
 parser = argparse.ArgumentParser(description='power iteration tester')
 
@@ -29,8 +28,6 @@ parser.add_argument('--seed', default=1, type=int)
 parser.add_argument('--mode', default='power_iter',
                     choices=['power_iter', 'lanczos'])
 args = parser.parse_args()
-
-seed_all(args.seed)
 
 
 def test_matrix(mat, ntrials, mode):

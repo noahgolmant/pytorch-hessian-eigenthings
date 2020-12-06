@@ -34,7 +34,7 @@ If you find this repo useful and would like to cite it in a publication, here is
 
     @misc{hessian-eigenthings,
         author       = {Noah Golmant, Zhewei Yao, Amir Gholami, Michael Mahoney, Joseph Gonzalez},
-        title        = {pytorch-hessian-eigentings: efficient PyTorch Hessian eigendecomposition},
+        title        = {pytorch-hessian-eigenthings: efficient PyTorch Hessian eigendecomposition},
         month        = oct,
         year         = 2018,
         version      = {1.0},
