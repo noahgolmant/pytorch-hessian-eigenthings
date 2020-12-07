@@ -61,7 +61,7 @@ class HVPOperator(Operator):
     def _apply_batch(self, vec):
         # compute original gradient, tracking computation graph
         self.zero_grad()
-        grad_vec = self.prepare_grad()
+        grad_vec = self._prepare_grad()
         self.zero_grad()
         # take the second gradient
         grad_grad = torch.autograd.grad(
@@ -83,7 +83,7 @@ class HVPOperator(Operator):
         hessian_vec_prod = hessian_vec_prod / n
         return hessian_vec_prod
 
-    def zero_grad(self):
+    def _zero_grad(self):
         """
         Zeros out the gradient info for each parameter in the model
         """
@@ -91,7 +91,7 @@ class HVPOperator(Operator):
             if p.grad is not None:
                 p.grad.data.zero_()
 
-    def prepare_grad(self):
+    def _prepare_grad(self):
         """
         Compute gradient w.r.t loss over all parameters and vectorize
         """

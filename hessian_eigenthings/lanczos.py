@@ -5,6 +5,8 @@ from scipy.sparse.linalg import LinearOperator as ScipyLinearOperator
 from scipy.sparse.linalg import eigsh
 from warnings import warn
 
+import hessian_eigenthings.utils as utils
+
 
 def lanczos(
     operator,
@@ -65,12 +67,12 @@ def lanczos(
 
     def _scipy_apply(x):
         x = torch.from_numpy(x)
-        x = x.half() if fp16 else x.float()
+        x = utils.maybe_fp16(x, fp16)
         if use_gpu:
             x = x.cuda()
-        out = operator.apply(x).cpu().numpy()
-        if fp16:
-            out = out.half()
+        out = operator.apply(x)
+        out = utils.maybe_fp16(out, fp16)
+        out = out.cpu().numpy()
         return out
 
     scipy_op = ScipyLinearOperator(shape, _scipy_apply)
@@ -78,6 +80,8 @@ def lanczos(
         init_vec = np.random.rand(size)
     elif isinstance(init_vec, torch.Tensor):
         init_vec = init_vec.cpu().numpy()
+
+    init_vec = utils.maybe_fp16(init_vec, fp16)
     eigenvals, eigenvecs = eigsh(
         A=scipy_op,
         k=num_eigenthings,
