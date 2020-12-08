@@ -13,4 +13,4 @@ setup(name="hessian_eigenthings",
       install_requires=install_requires,
       packages=find_packages(),
       description='Eigendecomposition of model Hessians in PyTorch!',
-      version='0.0.1')
+      version='0.0.2')
