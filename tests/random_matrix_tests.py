@@ -6,7 +6,8 @@ against np.linalg.eig results for various random matrix configurations
 import argparse
 import numpy as np
 import torch
-from hessian_eigenthings.power_iter import LambdaOperator, deflated_power_iteration
+from hessian_eigenthings.operator import LambdaOperator
+from hessian_eigenthings.power_iter import deflated_power_iteration
 from hessian_eigenthings.lanczos import lanczos
 import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
