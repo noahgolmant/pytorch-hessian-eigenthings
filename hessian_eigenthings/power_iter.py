@@ -5,35 +5,10 @@ to compute the top eigenvalues and eigenvectors of a linear operator
 import numpy as np
 import torch
 
-from hessian_eigenthings.utils import log, progress_bar
+from hessian_eigenthings.operator import LambdaOperator
+import hessian_eigenthings.utils as utils
 
 
-class Operator:
-    """
-    maps x -> Lx for a linear operator L
-    """
-
-    def __init__(self, size):
-        self.size = size
-
-    def apply(self, vec):
-        """
-        Function mapping vec -> L vec where L is a linear operator
-        """
-        raise NotImplementedError
-
-
-class LambdaOperator(Operator):
-    """
-    Linear operator based on a provided lambda function
-    """
-
-    def __init__(self, apply_fn, size):
-        super(LambdaOperator, self).__init__(size)
-        self.apply_fn = apply_fn
-
-    def apply(self, x):
-        return self.apply_fn(x)
 
 
 def deflated_power_iteration(
@@ -43,6 +18,7 @@ def deflated_power_iteration(
     power_iter_err_threshold=1e-4,
     momentum=0.0,
     use_gpu=True,
+    fp16=False,
     to_numpy=True,
 ):
     """
@@ -61,21 +37,23 @@ def deflated_power_iteration(
     def _deflate(x, val, vec):
         return val * vec.dot(x) * vec
 
-    log("beginning deflated power iteration")
+    utils.log("beginning deflated power iteration")
     for i in range(num_eigenthings):
-        log("computing eigenvalue/vector %d of %d" % (i + 1, num_eigenthings))
+        utils.log("computing eigenvalue/vector %d of %d" % (i + 1, num_eigenthings))
         eigenval, eigenvec = power_iteration(
             current_op,
             power_iter_steps,
             power_iter_err_threshold,
             momentum=momentum,
             use_gpu=use_gpu,
+            fp16=fp16,
             init_vec=prev_vec,
         )
-        log("eigenvalue %d: %.4f" % (i + 1, eigenval))
+        utils.log("eigenvalue %d: %.4f" % (i + 1, eigenval))
 
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
-            return op.apply(x) - _deflate(x, val, vec)
+            return utils.maybe_fp16(op.apply(x), fp16) - _deflate(x, val, vec)
+
 
         current_op = LambdaOperator(_new_op_fn, operator.size)
         prev_vec = eigenvec
@@ -97,7 +75,7 @@ def deflated_power_iteration(
 
 
 def power_iteration(
-    operator, steps=20, error_threshold=1e-4, momentum=0.0, use_gpu=True, init_vec=None
+    operator, steps=20, error_threshold=1e-4, momentum=0.0, use_gpu=True, fp16=False, init_vec=None
 ):
     """
     Compute dominant eigenvalue/eigenvector of a matrix
@@ -111,14 +89,16 @@ def power_iteration(
     else:
         vec = init_vec
 
+    vec = utils.maybe_fp16(vec, fp16)
+
     if use_gpu:
         vec = vec.cuda()
 
     prev_lambda = 0.0
-    prev_vec = torch.randn_like(vec)
+    prev_vec = utils.maybe_fp16(torch.randn_like(vec), fp16)
     for i in range(steps):
         prev_vec = vec / (torch.norm(vec) + 1e-6)
-        new_vec = operator.apply(vec) - momentum * prev_vec
+        new_vec = utils.maybe_fp16(operator.apply(vec), fp16) - momentum * prev_vec
         # need to handle case where we end up in the nullspace of the operator.
         # in this case, we are done.
         if torch.sum(new_vec).item() == 0.0:
@@ -130,7 +110,7 @@ def power_iteration(
             error = 1.0
         else:
             error = np.abs(diff / lambda_estimate)
-        progress_bar(i, steps, "power iter error: %.4f" % error)
+        utils.progress_bar(i, steps, "power iter error: %.4f" % error)
         if error < error_threshold:
             return lambda_estimate, vec
         prev_lambda = lambda_estimate

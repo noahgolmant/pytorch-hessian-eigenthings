@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import torch
 from hessian_eigenthings import compute_hessian_eigenthings
@@ -11,7 +12,7 @@ from variance_tests import get_full_hessian
 import scipy
 
 
-def test_principal_eigenvec(model, criterion, x, y, ntrials):
+def test_principal_eigenvec(model, criterion, x, y, ntrials, fp16):
     loss = criterion(model(x), y)
     loss_grad = torch.autograd.grad(loss, model.parameters(), create_graph=True)
     print("computing real hessian")
@@ -45,6 +46,7 @@ def test_principal_eigenvec(model, criterion, x, y, ntrials):
         power_iter_err_threshold=1e-5,
         momentum=0,
         use_gpu=False,
+        fp16=fp16
     )
     est_eigenval, est_eigenvec = est_eigenvecs[0], est_eigenvals[0]
 
@@ -61,12 +63,20 @@ def test_principal_eigenvec(model, criterion, x, y, ntrials):
 
 
 if __name__ == "__main__":
-    indim = 10
-    outdim = 10
+    parser = argparse.ArgumentParser(description='power iteration tester')
+
+    parser.add_argument('--data_dim', type=int, default=100)
+    parser.add_argument('--hidden_dim', type=int, default=1000)
+    parser.add_argument('--fp16', action='store_true')
+    parser.add_argument('--mode', default='power_iter',
+                        choices=['power_iter', 'lanczos'])
+    args = parser.parse_args()
+
+    indim = outdim = args.data_dim
+    hidden = args.hidden_dim
     nsamples = 10
     ntrials = 1
     bs = 10
-    hidden = 1000
 
     model = nn.Sequential(
         nn.Linear(indim, hidden),
@@ -79,4 +89,4 @@ if __name__ == "__main__":
     x = torch.rand((nsamples, indim))
     y = torch.rand((nsamples, outdim))
 
-    test_principal_eigenvec(model, criterion, x, y, ntrials)
+    test_principal_eigenvec(model, criterion, x, y, ntrials, fp16=args.fp16)

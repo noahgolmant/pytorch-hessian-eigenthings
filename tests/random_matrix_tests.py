@@ -6,12 +6,12 @@ against np.linalg.eig results for various random matrix configurations
 import argparse
 import numpy as np
 import torch
-from hessian_eigenthings.power_iter import LambdaOperator, deflated_power_iteration
+from hessian_eigenthings.operator import LambdaOperator
+from hessian_eigenthings.power_iter import deflated_power_iteration
 from hessian_eigenthings.lanczos import lanczos
 import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
 
-from skeletor.utils import seed_all
 
 parser = argparse.ArgumentParser(description='power iteration tester')
 
@@ -26,11 +26,10 @@ parser.add_argument('--momentum', default=0, type=float,
 parser.add_argument('--num_trials', default=30, type=int,
                     help='number of matrices per test')
 parser.add_argument('--seed', default=1, type=int)
+parser.add_argument('--fp16', action='store_true')
 parser.add_argument('--mode', default='power_iter',
                     choices=['power_iter', 'lanczos'])
 args = parser.parse_args()
-
-seed_all(args.seed)
 
 
 def test_matrix(mat, ntrials, mode):
@@ -39,7 +38,9 @@ def test_matrix(mat, ntrials, mode):
     It computes the average percent eigenval error and eigenvec simliartiy err
     """
     tensor = torch.from_numpy(mat).float()
-    op = LambdaOperator(lambda x: torch.matmul(tensor, x), tensor.size()[:1])
+
+    # for non-gpu tests, addmv not implemented for fp16 on CPU. have to do float.
+    op = LambdaOperator(lambda x: torch.matmul(tensor, x.float()), tensor.size()[:1])
     real_eigenvals, true_eigenvecs = np.linalg.eig(mat)
     real_eigenvecs = [true_eigenvecs[:, i] for i in range(len(real_eigenvals))]
 
@@ -53,7 +54,8 @@ def test_matrix(mat, ntrials, mode):
         est_eigenvals, est_eigenvecs = method(
             op,
             num_eigenthings=args.num_eigenthings,
-            use_gpu=False
+            use_gpu=False,
+            fp16=args.fp16
         )
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]

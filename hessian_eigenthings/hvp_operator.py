@@ -3,8 +3,14 @@ This module defines a linear operator to compute the hessian-vector product
 for a given pytorch model using subsampled data.
 """
 import torch
-from hessian_eigenthings.power_iter import Operator, deflated_power_iteration
+
+
+import hessian_eigenthings.power_iter as power_iter
+import hessian_eigenthings.utils as utils
+
 from hessian_eigenthings.lanczos import lanczos
+from hessian_eigenthings.operator import Operator
+
 
 
 class HVPOperator(Operator):
@@ -23,6 +29,7 @@ class HVPOperator(Operator):
         dataloader,
         criterion,
         use_gpu=True,
+        fp16=False,
         full_dataset=True,
         max_samples=256,
     ):
@@ -37,6 +44,7 @@ class HVPOperator(Operator):
         self.dataloader_iter = iter(dataloader)
         self.criterion = criterion
         self.use_gpu = use_gpu
+        self.fp16 = fp16
         self.full_dataset = full_dataset
         self.max_samples = max_samples
 
@@ -53,7 +61,7 @@ class HVPOperator(Operator):
     def _apply_batch(self, vec):
         # compute original gradient, tracking computation graph
         self.zero_grad()
-        grad_vec = self.prepare_grad()
+        grad_vec = self._prepare_grad()
         self.zero_grad()
         # take the second gradient
         grad_grad = torch.autograd.grad(
@@ -61,6 +69,7 @@ class HVPOperator(Operator):
         )
         # concatenate the results over the different components of the network
         hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in grad_grad])
+        hessian_vec_prod = utils.maybe_fp16(hessian_vec_prod, self.fp16)
         return hessian_vec_prod
 
     def _apply_full(self, vec):
@@ -74,7 +83,7 @@ class HVPOperator(Operator):
         hessian_vec_prod = hessian_vec_prod / n
         return hessian_vec_prod
 
-    def zero_grad(self):
+    def _zero_grad(self):
         """
         Zeros out the gradient info for each parameter in the model
         """
@@ -82,7 +91,7 @@ class HVPOperator(Operator):
             if p.grad is not None:
                 p.grad.data.zero_()
 
-    def prepare_grad(self):
+    def _prepare_grad(self):
         """
         Compute gradient w.r.t loss over all parameters and vectorize
         """
@@ -112,69 +121,9 @@ class HVPOperator(Operator):
                 grad_vec += torch.cat([g.contiguous().view(-1) for g in grad_dict])
             else:
                 grad_vec = torch.cat([g.contiguous().view(-1) for g in grad_dict])
+            grad_vec = utils.maybe_fp16(grad_vec, self.fp16)
         grad_vec /= num_chunks
         self.grad_vec = grad_vec
         return self.grad_vec
 
 
-def compute_hessian_eigenthings(
-    model,
-    dataloader,
-    loss,
-    num_eigenthings=10,
-    full_dataset=True,
-    mode="power_iter",
-    use_gpu=True,
-    max_samples=512,
-    **kwargs
-):
-    """
-    Computes the top `num_eigenthings` eigenvalues and eigenvecs
-    for the hessian of the given model by using subsampled power iteration
-    with deflation and the hessian-vector product
-
-    Parameters
-    ---------------
-
-    model : Module
-        pytorch model for this netowrk
-    dataloader : torch.data.DataLoader
-        dataloader with x,y pairs for which we compute the loss.
-    loss : torch.nn.modules.Loss | torch.nn.functional criterion
-        loss function to differentiate through
-    num_eigenthings : int
-        number of eigenvalues/eigenvecs to compute. computed in order of
-        decreasing eigenvalue magnitude.
-    full_dataset : boolean
-        if true, each power iteration call evaluates the gradient over the
-        whole dataset.
-    mode : str ['power_iter', 'lanczos']
-        which backend to use to compute the top eigenvalues.
-    use_gpu:
-        if true, attempt to use cuda for all lin alg computatoins
-    max_samples:
-        the maximum number of samples that can fit on-memory. used
-        to accumulate gradients for large batches.
-    **kwargs:
-        contains additional parameters passed onto lanczos or power_iter.
-    """
-    hvp_operator = HVPOperator(
-        model,
-        dataloader,
-        loss,
-        use_gpu=use_gpu,
-        full_dataset=full_dataset,
-        max_samples=max_samples,
-    )
-    eigenvals, eigenvecs = None, None
-    if mode == "power_iter":
-        eigenvals, eigenvecs = deflated_power_iteration(
-            hvp_operator, num_eigenthings, use_gpu=use_gpu, **kwargs
-        )
-    elif mode == "lanczos":
-        eigenvals, eigenvecs = lanczos(
-            hvp_operator, num_eigenthings, use_gpu=use_gpu, **kwargs
-        )
-    else:
-        raise ValueError("Unsupported mode %s (must be power_iter or lanczos)" % mode)
-    return eigenvals, eigenvecs
