@@ -1,8 +1,8 @@
 """ Top-level module for hessian eigenvec computation """
 from hessian_eigenthings.power_iter import power_iteration, deflated_power_iteration
 from hessian_eigenthings.lanczos import lanczos
+from hessian_eigenthings.stochastic_lanczos import stochastic_lanczos
 from hessian_eigenthings.hvp_operator import HVPOperator
-
 name = "hessian_eigenthings"
 
 def compute_hessian_eigenthings(
@@ -71,6 +71,10 @@ def compute_hessian_eigenthings(
         eigenvals, eigenvecs = lanczos(
             hvp_operator, num_eigenthings, use_gpu=use_gpu, fp16=fp16, **kwargs
         )
+    elif mode == "stochastic_lanczos":
+        eigenvals, eigenvecs = stochastic_lanczos(
+            hvp_operator, num_eigenthings, use_gpu=use_gpu, fp16=fp16, **kwargs
+        )
     else:
         raise ValueError("Unsupported mode %s (must be power_iter or lanczos)" % mode)
     return eigenvals, eigenvecs
@@ -79,6 +83,7 @@ __all__ = [
     "power_iteration",
     "deflated_power_iteration",
     "lanczos",
+    "stochastic_lanczos",
     "HVPOperator",
     "compute_hessian_eigenthings",
 ]
