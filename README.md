@@ -31,7 +31,7 @@ This also includes a more general power iteration with deflation implementation 
 
 ## Example file
 
-The example file in `example/main.py` utilizes [`skeletor`](https://github.com/noahgolmant/skeletor) version `0.1.4` for experiment orchestration, which can be installed via `pip install skeletor-ml`, but the rest of this library does not depend on it. You can execute the example via `python example/main.py <experimentname>`, where `<experimentname>` is a useful name like `resnet18_cifar10`.
+The example file in `example/main.py` utilizes [`skeletor`](https://github.com/noahgolmant/skeletor) version `0.1.4` for experiment orchestration, which can be installed via `pip install skeletor-ml`, but the rest of this library does not depend on it. You can execute the example via a command like `python example/main.py  --mode=power_iter <experimentname>`, where `<experimentname>` is a useful name like `resnet18_cifar10`. But it may just be easier to use a simpler codebase to instantiate PyTorch models and dataloaders (such as [`pytorch-cifar`](https://github.com/kuangliu/pytorch-cifar)).
 
 ## Citing this work
 If you find this repo useful and would like to cite it in a publication, here is a BibTeX entry:
