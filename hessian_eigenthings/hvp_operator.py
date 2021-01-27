@@ -60,9 +60,9 @@ class HVPOperator(Operator):
 
     def _apply_batch(self, vec):
         # compute original gradient, tracking computation graph
-        self.zero_grad()
+        self._zero_grad()
         grad_vec = self._prepare_grad()
-        self.zero_grad()
+        self._zero_grad()
         # take the second gradient
         grad_grad = torch.autograd.grad(
             grad_vec, self.model.parameters(), grad_outputs=vec, only_inputs=True
