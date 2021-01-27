@@ -29,6 +29,10 @@ eigenvals, eigenvecs = compute_hessian_eigenthings(model, dataloader,
 
 This also includes a more general power iteration with deflation implementation in `power_iter.py`. `lanczos.py` calls a [`scipy` hook](https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html) to a battle-tested ARPACK implementation.
 
+## Example file
+
+The example file in `example/main.py` utilizes [`skeletor`](https://github.com/noahgolmant/skeletor) version `0.1.4` for experiment orchestration, which can be installed via `pip install skeletor-ml`, but the rest of this library does not depend on it. You can execute the example via `python example/main.py <experimentname>`, where `<experimentname>` is a useful name like `resnet18_cifar10`.
+
 ## Citing this work
 If you find this repo useful and would like to cite it in a publication, here is a BibTeX entry:
 
