@@ -2,6 +2,14 @@
 
 The `hessian-eigenthings` module provides an efficient (and scalable!) way to compute the eigendecomposition of the Hessian for an arbitrary PyTorch model. It uses PyTorch's Hessian-vector product and your choice of (a) the Lanczos method or (b) stochastic power iteration with deflation in order to compute the top eigenvalues and eigenvectors of the Hessian.
 
+## Why use this?
+
+The eigenvalues and eigenvectors of the Hessian have been implicated in many generalization properties of neural networks. For example, many people hypothesize that "flat minima" with lower eigenvalues generalize better, that the Hessians of large models are very low-rank, and that certain optimization algorithms may lead to flatter or sharper minima. However, computing and storing the full Hessian requires memory that is quadratic in the number of parameters, which is infeasible for anything but toy problems.
+
+Iterative methods like Lanczos and power iteration can be used to find the eigendecomposition of arbitrary linear operators given access to a matrix-vector multiplication function. The Hessian-vector product (HVP) is the matrix-vector multiplication between the Hessian and an arbitrary vector *v*. It can be computed with linear memory usage by taking the derivative of the inner product between the gradient and *v*.  So this library combines the Hessian-vector product computation with these iterative methods to compute the eigendecomposition without the quadratic memory bottleneck.
+
+You can use this library for Hessian-vector product computation, the more general eigendecomposition routines for linear operators, or the conjunction of the two for Hessian spectrum analysis.
+
 ## Installation
 
 For now, you have to install from this repo. It's a tiny thing so why put it on pypi.
