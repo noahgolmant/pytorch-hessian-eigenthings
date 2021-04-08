@@ -1,31 +1,38 @@
 """ Use scipy/ARPACK implicitly restarted lanczos to find top k eigenthings """
+from typing import Tuple
+
 import numpy as np
 import torch
+import scipy.sparse.linalg as linalg
 from scipy.sparse.linalg import LinearOperator as ScipyLinearOperator
-from scipy.sparse.linalg import eigsh
 from warnings import warn
 
 import hessian_eigenthings.utils as utils
 
+from hessian_eigenthings.operator import Operator
+
 
 def lanczos(
-    operator,
-    num_eigenthings=10,
-    which="LM",
-    max_steps=20,
-    tol=1e-6,
-    num_lanczos_vectors=None,
-    init_vec=None,
-    use_gpu=False,
-    fp16=False,
-):
+    operator: Operator,
+    num_eigenthings: int =10,
+    which: str ="LM",
+    max_steps: int =20,
+    tol: float =1e-6,
+    num_lanczos_vectors: int =None,
+    init_vec: np.ndarray =None,
+    use_gpu: bool =False,
+    fp16: bool =False,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Use the scipy.sparse.linalg.eigsh hook to the ARPACK lanczos algorithm
     to find the top k eigenvalues/eigenvectors.
 
+    Please see scipy documentation for details on specific parameters
+    such as 'which'.
+
     Parameters
     -------------
-    operator: power_iter.Operator
+    operator: operator.Operator
         linear operator to solve.
     num_eigenthings : int
         number of eigenvalue/eigenvector pairs to compute
@@ -38,6 +45,7 @@ def lanczos(
         relative accuracy of eigenvalues / stopping criterion
     num_lanczos_vectors : int
         number of lanczos vectors to compute. if None, > 2*num_eigenthings
+        for stability.
     init_vec: [torch.Tensor, torch.cuda.Tensor]
         if None, use random tensor. this is the init vec for arnoldi updates.
     use_gpu: bool
@@ -78,11 +86,8 @@ def lanczos(
     scipy_op = ScipyLinearOperator(shape, _scipy_apply)
     if init_vec is None:
         init_vec = np.random.rand(size)
-    elif isinstance(init_vec, torch.Tensor):
-        init_vec = init_vec.cpu().numpy()
 
-    init_vec = utils.maybe_fp16(init_vec, fp16)
-    eigenvals, eigenvecs = eigsh(
+    eigenvals, eigenvecs = linalg.eigsh(
         A=scipy_op,
         k=num_eigenthings,
         which=which,

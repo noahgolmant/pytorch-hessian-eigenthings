@@ -4,6 +4,7 @@ against np.linalg.eig results for various random matrix configurations
 """
 
 import argparse
+import functools
 import numpy as np
 import torch
 from hessian_eigenthings.operator import LambdaOperator
@@ -46,11 +47,15 @@ def test_matrix(mat, ntrials, mode):
 
     eigenvals = []
     eigenvecs = []
+
+    if mode == 'lanczos':
+        method = lanczos
+    else:
+        method = functools.partial(deflated_power_iteration,
+                                   power_iter_steps=args.power_iter_steps,
+                                   momentum=args.momentum)
+
     for _ in range(ntrials):
-        if mode == 'lanczos':
-            method = lanczos
-        else:
-            method = deflated_power_iteration
         est_eigenvals, est_eigenvecs = method(
             op,
             num_eigenthings=args.num_eigenthings,
@@ -76,7 +81,7 @@ def test_matrix(mat, ntrials, mode):
     plt.suptitle('Random Matrix Eigendecomposition Errors: %d trials' % ntrials)
     plt.subplot(1, 2, 1)
     plt.title('Eigenvalues')
-    plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label='True Eigenvals')
+    plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label='True Eigenvals', linestyle='--', linewidth=5)
     plot_eigenval_estimates(eigenvals, label='Estimates')
     plt.legend()
     # Plot eigenvector L2 norm error
