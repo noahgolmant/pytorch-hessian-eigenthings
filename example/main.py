@@ -65,7 +65,7 @@ def main(args):
         args.num_eigenthings,
         mode=args.mode,
         # power_iter_steps=args.num_steps,
-        max_samples=args.max_samples,
+        max_possible_gpu_samples=args.max_samples,
         # momentum=args.momentum,
         full_dataset=args.full_dataset,
         use_gpu=args.cuda,

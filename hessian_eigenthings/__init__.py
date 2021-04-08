@@ -15,7 +15,7 @@ def compute_hessian_eigenthings(
     mode="power_iter",
     use_gpu=True,
     fp16=False,
-    max_samples=2 ** 16,
+    max_possible_gpu_samples=2 ** 16,
     **kwargs
 ):
     """
@@ -47,7 +47,7 @@ def compute_hessian_eigenthings(
     fp16: bool
         if true, store and do math with eigenvectors, gradients, etc. in fp16.
         (you should test if this is numerically stable for your application)
-    max_samples:
+    max_possible_gpu_samples:
         the maximum number of samples that can fit on-memory. used
         to accumulate gradients for large batches.
         (note: if smaller than dataloader batch size, this can have odd
@@ -61,7 +61,7 @@ def compute_hessian_eigenthings(
         loss,
         use_gpu=use_gpu,
         full_dataset=full_dataset,
-        max_samples=max_samples,
+        max_possible_gpu_samples=max_possible_gpu_samples,
     )
     eigenvals, eigenvecs = None, None
     if mode == "power_iter":
