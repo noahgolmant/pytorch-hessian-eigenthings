@@ -1,5 +1,6 @@
 """ Basic linear operator abstractions """
 
+
 class Operator:
     """
     maps x -> Lx for a linear operator L
@@ -26,4 +27,3 @@ class LambdaOperator(Operator):
 
     def apply(self, x):
         return self.apply_fn(x)
-

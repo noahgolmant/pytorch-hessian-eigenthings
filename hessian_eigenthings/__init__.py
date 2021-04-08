@@ -5,6 +5,7 @@ from hessian_eigenthings.hvp_operator import HVPOperator
 
 name = "hessian_eigenthings"
 
+
 def compute_hessian_eigenthings(
     model,
     dataloader,
@@ -14,7 +15,7 @@ def compute_hessian_eigenthings(
     mode="power_iter",
     use_gpu=True,
     fp16=False,
-    max_samples=2**16,
+    max_samples=2 ** 16,
     **kwargs
 ):
     """
@@ -74,6 +75,7 @@ def compute_hessian_eigenthings(
     else:
         raise ValueError("Unsupported mode %s (must be power_iter or lanczos)" % mode)
     return eigenvals, eigenvecs
+
 
 __all__ = [
     "power_iteration",

@@ -2,15 +2,18 @@
 This module defines a linear operator to compute the hessian-vector product
 for a given pytorch model using subsampled data.
 """
+
+from typing import Callable
+
+
 import torch
+import torch.nn as nn
+import torch.utils.data as data
 
 
-import hessian_eigenthings.power_iter as power_iter
 import hessian_eigenthings.utils as utils
 
-from hessian_eigenthings.lanczos import lanczos
 from hessian_eigenthings.operator import Operator
-
 
 
 class HVPOperator(Operator):
@@ -20,18 +23,18 @@ class HVPOperator(Operator):
     dataloader: pytorch dataloader that we get examples from to compute grads
     loss:   Loss function to descend (e.g. F.cross_entropy)
     use_gpu: use cuda or not
-    max_samples: max number of examples per batch using all GPUs.
+    max_possible_gpu_samples: max number of examples per batch using all GPUs.
     """
 
     def __init__(
         self,
-        model,
-        dataloader,
-        criterion,
-        use_gpu=True,
-        fp16=False,
-        full_dataset=True,
-        max_samples=256,
+        model: nn.Module,
+        dataloader: data.DataLoader,
+        criterion: Callable[[torch.Tensor], torch.Tensor],
+        use_gpu: bool =True,
+        fp16: bool =False,
+        full_dataset: bool =True,
+        max_possible_gpu_samples: int =256,
     ):
         size = int(sum(p.numel() for p in model.parameters()))
         super(HVPOperator, self).__init__(size)
@@ -46,9 +49,12 @@ class HVPOperator(Operator):
         self.use_gpu = use_gpu
         self.fp16 = fp16
         self.full_dataset = full_dataset
-        self.max_samples = max_samples
+        self.max_possible_gpu_samples = max_possible_gpu_samples
 
-    def apply(self, vec):
+        if not hasattr(self.dataloader, '__len__') and self.full_dataset:
+            raise ValueError("For full-dataset averaging, dataloader must have '__len__'")
+
+    def apply(self, vec: torch.Tensor):
         """
         Returns H*vec where H is the hessian of the loss w.r.t.
         the vectorized model parameters
@@ -58,21 +64,29 @@ class HVPOperator(Operator):
         else:
             return self._apply_batch(vec)
 
-    def _apply_batch(self, vec):
+    def _apply_batch(self, vec: torch.Tensor) -> torch.Tensor:
+        """
+        Computes the Hessian-vector product for a mini-batch from the dataset.
+        """
         # compute original gradient, tracking computation graph
         self._zero_grad()
         grad_vec = self._prepare_grad()
         self._zero_grad()
         # take the second gradient
-        grad_grad = torch.autograd.grad(
+        # this is the derivative of <grad_vec, v> where <,> is an inner product.
+        hessian_vec_prod_dict = torch.autograd.grad(
             grad_vec, self.model.parameters(), grad_outputs=vec, only_inputs=True
         )
         # concatenate the results over the different components of the network
-        hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in grad_grad])
+        hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in hessian_vec_prod_dict])
         hessian_vec_prod = utils.maybe_fp16(hessian_vec_prod, self.fp16)
         return hessian_vec_prod
 
-    def _apply_full(self, vec):
+    def _apply_full(self, vec: torch.Tensor) -> torch.Tensor:
+        """
+        Computes the Hessian-vector product averaged over all batches in the dataset.
+
+        """
         n = len(self.dataloader)
         hessian_vec_prod = None
         for _ in range(n):
@@ -91,7 +105,7 @@ class HVPOperator(Operator):
             if p.grad is not None:
                 p.grad.data.zero_()
 
-    def _prepare_grad(self):
+    def _prepare_grad(self) -> torch.Tensor:
         """
         Compute gradient w.r.t loss over all parameters and vectorize
         """
@@ -101,13 +115,17 @@ class HVPOperator(Operator):
             self.dataloader_iter = iter(self.dataloader)
             all_inputs, all_targets = next(self.dataloader_iter)
 
-        num_chunks = max(1, len(all_inputs) // self.max_samples)
+        num_chunks = max(1, len(all_inputs) // self.max_possible_gpu_samples)
 
         grad_vec = None
 
-        input_chunks = all_inputs.chunk(num_chunks)
-        target_chunks = all_targets.chunk(num_chunks)
-        for input, target in zip(input_chunks, target_chunks):
+        # This will do the "gradient chunking trick" to create micro-batches
+        # when the batch size is larger than what will fit in memory.
+        # WARNING: this may interact poorly with batch normalization.
+
+        input_microbatches = all_inputs.chunk(num_chunks)
+        target_microbatches = all_targets.chunk(num_chunks)
+        for input, target in zip(input_microbatches, target_microbatches):
             if self.use_gpu:
                 input = input.cuda()
                 target = target.cuda()
@@ -125,5 +143,3 @@ class HVPOperator(Operator):
         grad_vec /= num_chunks
         self.grad_vec = grad_vec
         return self.grad_vec
-
-

@@ -2,25 +2,25 @@
 This module contains functions to perform power iteration with deflation
 to compute the top eigenvalues and eigenvectors of a linear operator
 """
+from typing import Tuple
+
 import numpy as np
 import torch
 
-from hessian_eigenthings.operator import LambdaOperator
+from hessian_eigenthings.operator import Operator, LambdaOperator
 import hessian_eigenthings.utils as utils
 
 
-
-
 def deflated_power_iteration(
-    operator,
-    num_eigenthings=10,
-    power_iter_steps=20,
-    power_iter_err_threshold=1e-4,
-    momentum=0.0,
-    use_gpu=True,
-    fp16=False,
-    to_numpy=True,
-):
+    operator: Operator,
+    num_eigenthings: int = 10,
+    power_iter_steps: int = 20,
+    power_iter_err_threshold: float = 1e-4,
+    momentum: float = 0.0,
+    use_gpu: bool = True,
+    fp16: bool = False,
+    to_numpy: bool = True,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute top k eigenvalues by repeatedly subtracting out dyads
     operator: linear operator that gives us access to matrix vector product
@@ -54,13 +54,14 @@ def deflated_power_iteration(
         def _new_op_fn(x, op=current_op, val=eigenval, vec=eigenvec):
             return utils.maybe_fp16(op.apply(x), fp16) - _deflate(x, val, vec)
 
-
         current_op = LambdaOperator(_new_op_fn, operator.size)
         prev_vec = eigenvec
         eigenvals.append(eigenval)
         eigenvec = eigenvec.cpu()
         if to_numpy:
-            eigenvecs.append(eigenvec.numpy())
+            # Clone so that power_iteration can continue to use torch.
+            numpy_eigenvec = eigenvec.detach().clone().numpy()
+            eigenvecs.append(numpy_eigenvec)
         else:
             eigenvecs.append(eigenvec)
 
@@ -75,8 +76,14 @@ def deflated_power_iteration(
 
 
 def power_iteration(
-    operator, steps=20, error_threshold=1e-4, momentum=0.0, use_gpu=True, fp16=False, init_vec=None
-):
+    operator: Operator,
+    steps: int = 20,
+    error_threshold: float = 1e-4,
+    momentum: float = 0.0,
+    use_gpu: bool = True,
+    fp16: bool = False,
+    init_vec: torch.Tensor = None,
+) -> Tuple[float, torch.Tensor]:
     """
     Compute dominant eigenvalue/eigenvector of a matrix
     operator: linear Operator giving us matrix-vector product access
@@ -101,7 +108,7 @@ def power_iteration(
         new_vec = utils.maybe_fp16(operator.apply(vec), fp16) - momentum * prev_vec
         # need to handle case where we end up in the nullspace of the operator.
         # in this case, we are done.
-        if torch.sum(new_vec).item() == 0.0:
+        if torch.norm(new_vec).item() == 0.0:
             return 0.0, new_vec
         lambda_estimate = vec.dot(new_vec).item()
         diff = lambda_estimate - prev_lambda
@@ -112,7 +119,6 @@ def power_iteration(
             error = np.abs(diff / lambda_estimate)
         utils.progress_bar(i, steps, "power iter error: %.4f" % error)
         if error < error_threshold:
-            return lambda_estimate, vec
+            break
         prev_lambda = lambda_estimate
-
     return lambda_estimate, vec
