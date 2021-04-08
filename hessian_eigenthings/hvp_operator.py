@@ -31,10 +31,10 @@ class HVPOperator(Operator):
         model: nn.Module,
         dataloader: data.DataLoader,
         criterion: Callable[[torch.Tensor], torch.Tensor],
-        use_gpu: bool =True,
-        fp16: bool =False,
-        full_dataset: bool =True,
-        max_possible_gpu_samples: int =256,
+        use_gpu: bool = True,
+        fp16: bool = False,
+        full_dataset: bool = True,
+        max_possible_gpu_samples: int = 256,
     ):
         size = int(sum(p.numel() for p in model.parameters()))
         super(HVPOperator, self).__init__(size)
