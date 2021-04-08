@@ -75,9 +75,9 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
             dataloader,
             criterion,
             num_eigenthings=nparams,
-            power_iter_steps=10,
-            power_iter_err_threshold=1e-5,
-            momentum=0,
+            power_iter_steps=100,
+            power_iter_err_threshold=1e-9,
+            momentum=0.0,
             use_gpu=False,
         )
         est_inds = np.argsort(est_eigenvals)
@@ -99,7 +99,7 @@ def test_full_hessian(model, criterion, x, y, ntrials=10):
     plt.suptitle("Hessian eigendecomposition errors: %d trials" % ntrials)
     plt.subplot(1, 2, 1)
     plt.title("Eigenvalues")
-    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals")
+    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals", linewidth=3, linestyle='--')
     plot_eigenval_estimates(eigenvals, label="Estimates")
     plt.legend()
     # Plot eigenvector L2 norm error
@@ -128,13 +128,11 @@ def test_stochastic_hessian(model, criterion, real_hessian, x, y, bs=10, ntrials
             dataloader,
             criterion,
             num_eigenthings=nparams,
-            power_iter_steps=10,
-            power_iter_err_threshold=1e-5,
+            power_iter_steps=100,
+            power_iter_err_threshold=1e-9,
             momentum=0,
             use_gpu=False,
         )
-        est_eigenvals = np.array(est_eigenvals)
-        est_eigenvecs = np.array([t.numpy() for t in est_eigenvecs])
 
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
@@ -155,7 +153,7 @@ def test_stochastic_hessian(model, criterion, real_hessian, x, y, bs=10, ntrials
     plt.suptitle("Stochastic Hessian eigendecomposition errors: %d trials" % ntrials)
     plt.subplot(1, 2, 1)
     plt.title("Eigenvalues")
-    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals")
+    plt.plot(list(range(nparams)), real_eigenvals, label="True Eigenvals", linewidth=3, linestyle='--')
     plot_eigenval_estimates(eigenvals, label="Estimates")
     plt.legend()
     # Plot eigenvector L2 norm error
@@ -241,5 +239,5 @@ if __name__ == "__main__":
     y = torch.rand((nsamples, outdim))
 
     hessian = test_full_hessian(model, criterion, x, y, ntrials=ntrials)
-    # test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
+    test_stochastic_hessian(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
     # test_fixed_mini(model, criterion, hessian, x, y, bs=bs, ntrials=ntrials)
