@@ -14,22 +14,32 @@ import matplotlib.pyplot as plt
 from utils import plot_eigenval_estimates, plot_eigenvec_errors
 
 
-parser = argparse.ArgumentParser(description='power iteration tester')
+parser = argparse.ArgumentParser(description="power iteration tester")
 
-parser.add_argument('--matrix_dim', type=int, default=100,
-                    help='number of rows/columns in matrix')
-parser.add_argument('--num_eigenthings', type=int, default=10,
-                    help='number of eigenvalues to compute')
-parser.add_argument('--power_iter_steps', default=20, type=int,
-                    help='number of steps of power iteration')
-parser.add_argument('--momentum', default=0, type=float,
-                    help='acceleration term for stochastic power iter')
-parser.add_argument('--num_trials', default=30, type=int,
-                    help='number of matrices per test')
-parser.add_argument('--seed', default=1, type=int)
-parser.add_argument('--fp16', action='store_true')
-parser.add_argument('--mode', default='power_iter',
-                    choices=['power_iter', 'lanczos'])
+parser.add_argument(
+    "--matrix_dim", type=int, default=100, help="number of rows/columns in matrix"
+)
+parser.add_argument(
+    "--num_eigenthings", type=int, default=10, help="number of eigenvalues to compute"
+)
+parser.add_argument(
+    "--power_iter_steps",
+    default=20,
+    type=int,
+    help="number of steps of power iteration",
+)
+parser.add_argument(
+    "--momentum",
+    default=0,
+    type=float,
+    help="acceleration term for stochastic power iter",
+)
+parser.add_argument(
+    "--num_trials", default=30, type=int, help="number of matrices per test"
+)
+parser.add_argument("--seed", default=1, type=int)
+parser.add_argument("--fp16", action="store_true")
+parser.add_argument("--mode", default="power_iter", choices=["power_iter", "lanczos"])
 args = parser.parse_args()
 
 
@@ -48,19 +58,18 @@ def test_matrix(mat, ntrials, mode):
     eigenvals = []
     eigenvecs = []
 
-    if mode == 'lanczos':
+    if mode == "lanczos":
         method = lanczos
     else:
-        method = functools.partial(deflated_power_iteration,
-                                   power_iter_steps=args.power_iter_steps,
-                                   momentum=args.momentum)
+        method = functools.partial(
+            deflated_power_iteration,
+            power_iter_steps=args.power_iter_steps,
+            momentum=args.momentum,
+        )
 
     for _ in range(ntrials):
         est_eigenvals, est_eigenvecs = method(
-            op,
-            num_eigenthings=args.num_eigenthings,
-            use_gpu=False,
-            fp16=args.fp16
+            op, num_eigenthings=args.num_eigenthings, use_gpu=False, fp16=args.fp16
         )
         est_inds = np.argsort(est_eigenvals)
         est_eigenvals = np.array(est_eigenvals)[est_inds][::-1]
@@ -74,20 +83,26 @@ def test_matrix(mat, ntrials, mode):
 
     # truncate estimates
     real_inds = np.argsort(real_eigenvals)
-    real_eigenvals = np.array(real_eigenvals)[real_inds][-args.num_eigenthings:][::-1]
-    real_eigenvecs = np.array(real_eigenvecs)[real_inds][-args.num_eigenthings:][::-1]
+    real_eigenvals = np.array(real_eigenvals)[real_inds][-args.num_eigenthings :][::-1]
+    real_eigenvecs = np.array(real_eigenvecs)[real_inds][-args.num_eigenthings :][::-1]
 
     # Plot eigenvalue error
-    plt.suptitle('Random Matrix Eigendecomposition Errors: %d trials' % ntrials)
+    plt.suptitle("Random Matrix Eigendecomposition Errors: %d trials" % ntrials)
     plt.subplot(1, 2, 1)
-    plt.title('Eigenvalues')
-    plt.plot(list(range(len(real_eigenvals))), real_eigenvals, label='True Eigenvals', linestyle='--', linewidth=5)
-    plot_eigenval_estimates(eigenvals, label='Estimates')
+    plt.title("Eigenvalues")
+    plt.plot(
+        list(range(len(real_eigenvals))),
+        real_eigenvals,
+        label="True Eigenvals",
+        linestyle="--",
+        linewidth=5,
+    )
+    plot_eigenval_estimates(eigenvals, label="Estimates")
     plt.legend()
     # Plot eigenvector L2 norm error
     plt.subplot(1, 2, 2)
-    plt.title('Eigenvector cosine simliarity')
-    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label='Estimates')
+    plt.title("Eigenvector cosine simliarity")
+    plot_eigenvec_errors(real_eigenvecs, eigenvecs, label="Estimates")
     plt.legend()
     plt.show()
 
@@ -100,7 +115,7 @@ def generate_wishart(n, offset=0.0):
     matrix = np.random.random(size=(n, n)).astype(float)
     matrix = matrix.transpose().dot(matrix)
     matrix = matrix + offset * np.eye(n)
-    return (1./n) * matrix
+    return (1.0 / n) * matrix
 
 
 def test_wishart():
@@ -108,5 +123,5 @@ def test_wishart():
     test_matrix(m, args.num_trials, mode=args.mode)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_wishart()

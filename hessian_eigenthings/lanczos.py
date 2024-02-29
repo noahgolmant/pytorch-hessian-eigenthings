@@ -1,5 +1,5 @@
 """ Use scipy/ARPACK implicitly restarted lanczos to find top k eigenthings """
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import torch
@@ -14,14 +14,14 @@ from hessian_eigenthings.operator import Operator
 
 def lanczos(
     operator: Operator,
-    num_eigenthings: int =10,
-    which: str ="LM",
-    max_steps: int =20,
-    tol: float =1e-6,
-    num_lanczos_vectors: int =None,
-    init_vec: np.ndarray =None,
-    use_gpu: bool =False,
-    fp16: bool =False,
+    num_eigenthings: int = 10,
+    which: str = "LM",
+    max_steps: int = 20,
+    tol: float = 1e-6,
+    num_lanczos_vectors: Union[int, None] = None,
+    init_vec: Union[np.ndarray, None] = None,
+    device: utils.Device = "cpu",
+    fp16: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Use the scipy.sparse.linalg.eigsh hook to the ARPACK lanczos algorithm
@@ -76,8 +76,10 @@ def lanczos(
     def _scipy_apply(x):
         x = torch.from_numpy(x)
         x = utils.maybe_fp16(x, fp16)
-        if use_gpu:
+        if device == "cuda":
             x = x.cuda()
+        if device == "mps":
+            x = x.to("mps")
         out = operator.apply(x)
         out = utils.maybe_fp16(out, fp16)
         out = out.cpu().numpy()
@@ -92,7 +94,7 @@ def lanczos(
         k=num_eigenthings,
         which=which,
         maxiter=max_steps,
-        tol=tol,
+        tol=int(tol),
         ncv=num_lanczos_vectors,
         return_eigenvectors=True,
     )

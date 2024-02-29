@@ -2,7 +2,7 @@
 This module contains functions to perform power iteration with deflation
 to compute the top eigenvalues and eigenvectors of a linear operator
 """
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import torch
@@ -17,7 +17,7 @@ def deflated_power_iteration(
     power_iter_steps: int = 20,
     power_iter_err_threshold: float = 1e-4,
     momentum: float = 0.0,
-    use_gpu: bool = True,
+    device: utils.Device = "cuda",
     fp16: bool = False,
     to_numpy: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -45,7 +45,7 @@ def deflated_power_iteration(
             power_iter_steps,
             power_iter_err_threshold,
             momentum=momentum,
-            use_gpu=use_gpu,
+            device=device,
             fp16=fp16,
             init_vec=prev_vec,
         )
@@ -80,9 +80,9 @@ def power_iteration(
     steps: int = 20,
     error_threshold: float = 1e-4,
     momentum: float = 0.0,
-    use_gpu: bool = True,
+    device: utils.Device = "cuda",
     fp16: bool = False,
-    init_vec: torch.Tensor = None,
+    init_vec: Union[torch.Tensor, None] = None,
 ) -> Tuple[float, torch.Tensor]:
     """
     Compute dominant eigenvalue/eigenvector of a matrix
@@ -98,8 +98,10 @@ def power_iteration(
 
     vec = utils.maybe_fp16(vec, fp16)
 
-    if use_gpu:
+    if device == "cuda":
         vec = vec.cuda()
+    if device == "mps":
+        vec = vec.to("mps")
 
     prev_lambda = 0.0
     prev_vec = utils.maybe_fp16(torch.randn_like(vec), fp16)

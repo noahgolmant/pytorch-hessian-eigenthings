@@ -3,7 +3,7 @@ This module defines a linear operator to compute the hessian-vector product
 for a given pytorch model using subsampled data.
 """
 
-from typing import Callable
+from typing import Callable, Union
 
 
 import torch
@@ -30,8 +30,8 @@ class HVPOperator(Operator):
         self,
         model: nn.Module,
         dataloader: data.DataLoader,
-        criterion: Callable[[torch.Tensor], torch.Tensor],
-        use_gpu: bool = True,
+        criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+        device: utils.Device = "cuda",
         fp16: bool = False,
         full_dataset: bool = True,
         max_possible_gpu_samples: int = 256,
@@ -40,19 +40,21 @@ class HVPOperator(Operator):
         super(HVPOperator, self).__init__(size)
         self.grad_vec = torch.zeros(size)
         self.model = model
-        if use_gpu:
+        if device == "cuda":
             self.model = self.model.cuda()
         self.dataloader = dataloader
         # Make a copy since we will go over it a bunch
         self.dataloader_iter = iter(dataloader)
         self.criterion = criterion
-        self.use_gpu = use_gpu
+        self.device = device
         self.fp16 = fp16
         self.full_dataset = full_dataset
         self.max_possible_gpu_samples = max_possible_gpu_samples
 
-        if not hasattr(self.dataloader, '__len__') and self.full_dataset:
-            raise ValueError("For full-dataset averaging, dataloader must have '__len__'")
+        if not hasattr(self.dataloader, "__len__") and self.full_dataset:
+            raise ValueError(
+                "For full-dataset averaging, dataloader must have '__len__'"
+            )
 
     def apply(self, vec: torch.Tensor):
         """
@@ -75,10 +77,15 @@ class HVPOperator(Operator):
         # take the second gradient
         # this is the derivative of <grad_vec, v> where <,> is an inner product.
         hessian_vec_prod_dict = torch.autograd.grad(
-            grad_vec, self.model.parameters(), grad_outputs=vec, only_inputs=True
+            grad_vec,
+            torch.Tensor(self.model.parameters()),
+            grad_outputs=vec,
+            only_inputs=True,
         )
         # concatenate the results over the different components of the network
-        hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in hessian_vec_prod_dict])
+        hessian_vec_prod = torch.cat(
+            [g.contiguous().view(-1) for g in hessian_vec_prod_dict]
+        )
         hessian_vec_prod = utils.maybe_fp16(hessian_vec_prod, self.fp16)
         return hessian_vec_prod
 
@@ -88,12 +95,13 @@ class HVPOperator(Operator):
 
         """
         n = len(self.dataloader)
-        hessian_vec_prod = None
+        hessian_vec_prod: Union[torch.Tensor, None] = None
         for _ in range(n):
             if hessian_vec_prod is not None:
                 hessian_vec_prod += self._apply_batch(vec)
             else:
                 hessian_vec_prod = self._apply_batch(vec)
+        assert hessian_vec_prod is not None
         hessian_vec_prod = hessian_vec_prod / n
         return hessian_vec_prod
 
@@ -117,7 +125,7 @@ class HVPOperator(Operator):
 
         num_chunks = max(1, len(all_inputs) // self.max_possible_gpu_samples)
 
-        grad_vec = None
+        grad_vec: Union[torch.Tensor, None] = None
 
         # This will do the "gradient chunking trick" to create micro-batches
         # when the batch size is larger than what will fit in memory.
@@ -126,20 +134,21 @@ class HVPOperator(Operator):
         input_microbatches = all_inputs.chunk(num_chunks)
         target_microbatches = all_targets.chunk(num_chunks)
         for input, target in zip(input_microbatches, target_microbatches):
-            if self.use_gpu:
+            if self.device == "cuda":
                 input = input.cuda()
                 target = target.cuda()
 
             output = self.model(input)
             loss = self.criterion(output, target)
             grad_dict = torch.autograd.grad(
-                loss, self.model.parameters(), create_graph=True
+                loss, torch.Tensor(self.model.parameters()), create_graph=True
             )
             if grad_vec is not None:
                 grad_vec += torch.cat([g.contiguous().view(-1) for g in grad_dict])
             else:
                 grad_vec = torch.cat([g.contiguous().view(-1) for g in grad_dict])
             grad_vec = utils.maybe_fp16(grad_vec, self.fp16)
+        assert grad_vec is not None
         grad_vec /= num_chunks
         self.grad_vec = grad_vec
         return self.grad_vec

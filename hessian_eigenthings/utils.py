@@ -3,6 +3,10 @@ import logging
 import shutil
 import sys
 import time
+from typing import Literal
+
+Device = Literal["cpu", "cuda", "mps"]
+
 
 TOTAL_BAR_LENGTH = 65.0
 
@@ -22,7 +26,7 @@ begin_time = last_time
 
 
 def format_time(seconds):
-    """ converts seconds into day-hour-minute-second-ms string format """
+    """converts seconds into day-hour-minute-second-ms string format"""
     days = int(seconds / 3600 / 24)
     seconds = seconds - days * 3600 * 24
     hours = int(seconds / 3600)

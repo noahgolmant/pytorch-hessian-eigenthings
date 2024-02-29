@@ -2,6 +2,7 @@
 from hessian_eigenthings.power_iter import power_iteration, deflated_power_iteration
 from hessian_eigenthings.lanczos import lanczos
 from hessian_eigenthings.hvp_operator import HVPOperator
+from hessian_eigenthings.utils import Device
 
 name = "hessian_eigenthings"
 
@@ -13,9 +14,9 @@ def compute_hessian_eigenthings(
     num_eigenthings=10,
     full_dataset=True,
     mode="power_iter",
-    use_gpu=True,
+    device: Device = "cuda",
     fp16=False,
-    max_possible_gpu_samples=2 ** 16,
+    max_possible_gpu_samples=2**16,
     **kwargs
 ):
     """
@@ -59,18 +60,18 @@ def compute_hessian_eigenthings(
         model,
         dataloader,
         loss,
-        use_gpu=use_gpu,
+        device=device,
         full_dataset=full_dataset,
         max_possible_gpu_samples=max_possible_gpu_samples,
     )
     eigenvals, eigenvecs = None, None
     if mode == "power_iter":
         eigenvals, eigenvecs = deflated_power_iteration(
-            hvp_operator, num_eigenthings, use_gpu=use_gpu, fp16=fp16, **kwargs
+            hvp_operator, num_eigenthings, device=device, fp16=fp16, **kwargs
         )
     elif mode == "lanczos":
         eigenvals, eigenvecs = lanczos(
-            hvp_operator, num_eigenthings, use_gpu=use_gpu, fp16=fp16, **kwargs
+            hvp_operator, num_eigenthings, device=device, fp16=fp16, **kwargs
         )
     else:
         raise ValueError("Unsupported mode %s (must be power_iter or lanczos)" % mode)

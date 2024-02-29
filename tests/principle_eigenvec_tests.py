@@ -46,7 +46,7 @@ def test_principal_eigenvec(model, criterion, x, y, ntrials, fp16):
         power_iter_err_threshold=1e-5,
         momentum=0,
         use_gpu=False,
-        fp16=fp16
+        fp16=fp16,
     )
     est_eigenval, est_eigenvec = est_eigenvecs[0], est_eigenvals[0]
 
@@ -63,13 +63,14 @@ def test_principal_eigenvec(model, criterion, x, y, ntrials, fp16):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='power iteration tester')
+    parser = argparse.ArgumentParser(description="power iteration tester")
 
-    parser.add_argument('--data_dim', type=int, default=100)
-    parser.add_argument('--hidden_dim', type=int, default=1000)
-    parser.add_argument('--fp16', action='store_true')
-    parser.add_argument('--mode', default='power_iter',
-                        choices=['power_iter', 'lanczos'])
+    parser.add_argument("--data_dim", type=int, default=100)
+    parser.add_argument("--hidden_dim", type=int, default=1000)
+    parser.add_argument("--fp16", action="store_true")
+    parser.add_argument(
+        "--mode", default="power_iter", choices=["power_iter", "lanczos"]
+    )
     args = parser.parse_args()
 
     indim = outdim = args.data_dim

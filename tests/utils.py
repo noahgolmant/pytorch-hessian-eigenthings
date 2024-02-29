@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def compute_eigenvec_cos_similarity(actual, estimated):
     scores = []
     for estimate in estimated:
@@ -24,7 +25,7 @@ def plot_eigenval_estimates(estimates, label):
     x = list(range(len(y)))
     error = np.sqrt(var)
     plt.plot(x, y, label=label)
-    plt.fill_between(x, y-error, y+error, alpha=.2)
+    plt.fill_between(x, y - error, y + error, alpha=0.2)
 
 
 def plot_eigenvec_errors(true, estimates, label):
@@ -47,4 +48,4 @@ def plot_eigenvec_errors(true, estimates, label):
 
     error = np.sqrt(var)
     plt.plot(x, y, label=label)
-    plt.fill_between(x, y-error, y+error, alpha=.2)
+    plt.fill_between(x, y - error, y + error, alpha=0.2)
