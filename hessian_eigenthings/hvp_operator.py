@@ -131,6 +131,7 @@ class HVPOperator(Operator):
                 target = target.cuda()
 
             output = self.model(input)
+            output = output.logits if hasattr(output, 'logits') else output
             loss = self.criterion(output, target)
             grad_dict = torch.autograd.grad(
                 loss, self.model.parameters(), create_graph=True
