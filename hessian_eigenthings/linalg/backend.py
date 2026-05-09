@@ -60,10 +60,21 @@ class SingleDeviceBackend:
     def randn_like(
         self, a: torch.Tensor, *, generator: torch.Generator | None = None
     ) -> torch.Tensor:
-        return torch.randn(a.shape, dtype=a.dtype, device=a.device, generator=generator)
+        # torch.randn with `device` and `generator` requires both on the same
+        # device. Callers commonly use a CPU generator (for portability) with a
+        # CUDA tensor; sample on the generator's device and move to match.
+        if generator is None or generator.device == a.device:
+            return torch.randn(a.shape, dtype=a.dtype, device=a.device, generator=generator)
+        out = torch.randn(a.shape, generator=generator)
+        return out.to(device=a.device, dtype=a.dtype)
 
     def rademacher_like(
         self, a: torch.Tensor, *, generator: torch.Generator | None = None
     ) -> torch.Tensor:
-        bits = torch.randint(0, 2, a.shape, dtype=torch.int64, device=a.device, generator=generator)
+        if generator is None or generator.device == a.device:
+            bits = torch.randint(
+                0, 2, a.shape, dtype=torch.int64, device=a.device, generator=generator
+            )
+        else:
+            bits = torch.randint(0, 2, a.shape, dtype=torch.int64, generator=generator).to(a.device)
         return bits.to(a.dtype) * 2.0 - 1.0

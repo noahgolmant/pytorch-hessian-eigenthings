@@ -84,6 +84,34 @@ def test_rademacher_mean_is_near_zero(backend: SingleDeviceBackend, gen: torch.G
     assert abs(r.mean().item()) < 0.02
 
 
+@pytest.mark.gpu
+def test_randn_like_cpu_generator_cuda_tensor(backend: SingleDeviceBackend) -> None:
+    """Common pattern: a CPU torch.Generator passed for a CUDA tensor.
+    torch.randn(device='cuda', generator=cpu_gen) raises; backend should generate
+    on the generator's device and move."""
+    if not torch.cuda.is_available():
+        pytest.skip("requires CUDA")
+    a = torch.empty(64, device="cuda", dtype=torch.float32)
+    g = torch.Generator(device="cpu").manual_seed(42)
+    out = backend.randn_like(a, generator=g)
+    assert out.device == a.device
+    assert out.dtype == a.dtype
+    assert out.shape == a.shape
+
+
+@pytest.mark.gpu
+def test_rademacher_like_cpu_generator_cuda_tensor(backend: SingleDeviceBackend) -> None:
+    if not torch.cuda.is_available():
+        pytest.skip("requires CUDA")
+    a = torch.empty(64, device="cuda", dtype=torch.float32)
+    g = torch.Generator(device="cpu").manual_seed(42)
+    out = backend.rademacher_like(a, generator=g)
+    assert out.device == a.device
+    assert out.dtype == a.dtype
+    unique = torch.unique(out)
+    assert torch.equal(torch.sort(unique).values.cpu(), torch.tensor([-1.0, 1.0]))
+
+
 def test_backend_implements_protocol() -> None:
     from hessian_eigenthings.linalg import LinAlgBackend
 
