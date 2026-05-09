@@ -1096,7 +1096,35 @@
   <span class="md-ellipsis">
     
   
-    API
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
   
 
     
@@ -1153,6 +1181,34 @@
     
   
     Loss functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/param_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameter selection
   
 
     
@@ -1290,11 +1346,11 @@
 <div class="arithmatex">\[\phi(\lambda) \;=\; \frac{1}{n} \sum_{i=1}^n \delta(\lambda - \lambda_i)\]</div>
 <p>For a trained neural network this density typically has a large bulk concentrated near zero plus a small number of outliers — see Ghorbani, Krishnan, Xiao (2019) and Pan et al. (ICML 2025) on the power-law structure in LLMs.</p>
 <h2 id="stochastic-lanczos-quadrature-slq">Stochastic Lanczos Quadrature (SLQ)<a class="headerlink" href="#stochastic-lanczos-quadrature-slq" title="Permanent link">&para;</a></h2>
-<p>Computing <span class="arithmatex">\(\phi\)</span> exactly requires the full eigendecomposition. Ubaru/Chen/Saad 2017 give a stochastic estimator that costs <span class="arithmatex">\(O(\text{num\_runs} \times \text{lanczos\_steps})\)</span> matvecs.</p>
+<p>Computing <span class="arithmatex">\(\phi\)</span> exactly requires the full eigendecomposition. Ubaru/Chen/Saad 2017 give a stochastic estimator that costs <span class="arithmatex">\(O(n_v \cdot m)\)</span> matvecs, where <span class="arithmatex">\(n_v\)</span> is the number of random init vectors and <span class="arithmatex">\(m\)</span> is the number of Lanczos steps per init.</p>
 <p>For each of <span class="arithmatex">\(n_v\)</span> random Rademacher init vectors <span class="arithmatex">\(v_l\)</span>:</p>
 <ol>
 <li>Run <span class="arithmatex">\(m\)</span> Lanczos steps from <span class="arithmatex">\(v_l\)</span> to obtain a tridiagonal <span class="arithmatex">\(T_m^{(l)}\)</span>.</li>
-<li>Eigendecompose <span class="arithmatex">\(T_m^{(l)}\)</span>: nodes $\theta_k^{(l)} = $ eigenvalues, weights <span class="arithmatex">\(\tau_k^{(l)} = (e_1^\top y_k)^2\)</span> where <span class="arithmatex">\(y_k\)</span> is the <span class="arithmatex">\(k\)</span>-th eigenvector and <span class="arithmatex">\(e_1 = (1, 0, \ldots, 0)\)</span>.</li>
+<li>Eigendecompose <span class="arithmatex">\(T_m^{(l)}\)</span>. The nodes <span class="arithmatex">\(\theta_k^{(l)}\)</span> are the eigenvalues of <span class="arithmatex">\(T_m^{(l)}\)</span>, and the weights <span class="arithmatex">\(\tau_k^{(l)} = (e_1^\top y_k)^2\)</span> are the squared first components of its eigenvectors <span class="arithmatex">\(y_k\)</span>, where <span class="arithmatex">\(e_1 = (1, 0, \ldots, 0)\)</span>.</li>
 <li>The smoothed density is the average over runs of a sum of Gaussian-blurred contributions:</li>
 </ol>
 <div class="arithmatex">\[\phi(t) \;\approx\; \frac{1}{n_v} \sum_{l=1}^{n_v} \sum_{k=1}^m (\tau_k^{(l)})^2 \, g_\sigma(t - \theta_k^{(l)})\]</div>

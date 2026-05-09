@@ -1091,7 +1091,35 @@
   <span class="md-ellipsis">
     
   
-    API
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
   
 
     
@@ -1148,6 +1176,34 @@
     
   
     Loss functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/param_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameter selection
   
 
     
@@ -1290,7 +1346,7 @@
 <h3 id="finite-difference-fsdp-friendly">Finite difference (FSDP-friendly)<a class="headerlink" href="#finite-difference-fsdp-friendly" title="Permanent link">&para;</a></h3>
 <p>The classic central difference:</p>
 <div class="arithmatex">\[Hv \;\approx\; \frac{\nabla L(\theta + \varepsilon v) \;-\; \nabla L(\theta - \varepsilon v)}{2\varepsilon}\]</div>
-<p>Two normal forward+backward passes, no second-backward graph anywhere. This is the technique Granziol &amp; Juarev 2026 (arXiv:2602.00816) revive at LLM scale, because FSDP detaches its gradient collectives from the autograd graph, breaking double-backward. Finite difference doesn't care.</p>
+<p>Two normal forward+backward passes, no second-backward graph anywhere. This is the technique Granziol &amp; Juarev 2026 (arXiv:2602.00816) revive at LLM scale, because <strong>Fully Sharded Data Parallel (FSDP)</strong> — PyTorch's standard mechanism for training models too large to fit on a single device — detaches its gradient collectives from the autograd graph, breaking double-backward. Finite difference doesn't care: it only uses first-order gradients, which FSDP handles correctly out of the box.</p>
 <p>Use via <code>HessianOperator(method="finite_difference")</code>. See <a href="../numerical-stability/">Numerical stability</a> for how to pick <span class="arithmatex">\(\varepsilon\)</span>.</p>
 <h2 id="why-this-is-enough">Why this is enough<a class="headerlink" href="#why-this-is-enough" title="Permanent link">&para;</a></h2>
 <p>For the things people actually want from the Hessian:</p>

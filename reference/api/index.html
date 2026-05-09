@@ -16,7 +16,7 @@
         <link rel="prev" href="../../how-to/custom-curvature-operators/">
       
       
-        <link rel="next" href="../algorithms/">
+        <link rel="next" href="../operators/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>API - hessian-eigenthings</title>
+        <title>Overview - hessian-eigenthings</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#api" class="md-skip">
+        <a href="#api-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              API
+              Overview
             
           </span>
         </div>
@@ -985,24 +985,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1010,7 +992,7 @@
   <span class="md-ellipsis">
     
   
-    API
+    Overview
   
 
     
@@ -1020,36 +1002,34 @@
 
       </a>
       
-        
+    </li>
+  
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+              
+            
+              
+                
   
   
   
+  
+    <li class="md-nav__item">
+      <a href="../operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
   
+    Operators
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#hessian_eigenthings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        hessian_eigenthings
-      
-    </span>
-  </a>
+
+    
+  </span>
   
-</li>
-      
-    </ul>
   
-</nav>
-      
+
+      </a>
     </li>
   
 
@@ -1111,6 +1091,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../param_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameter selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1138,25 +1146,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#hessian_eigenthings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        hessian_eigenthings
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1175,50 +1164,15 @@
   
 
 
-<h1 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h1>
-
-
-<div class="doc doc-object doc-module">
-
-
-
-<h2 id="hessian_eigenthings" class="doc doc-heading">
-            <code>hessian_eigenthings</code>
-
-
-<a href="#hessian_eigenthings" class="headerlink" title="Permanent link">&para;</a></h2>
-
-    <div class="doc doc-contents first">
-
-        <p>Iterative eigendecomposition of curvature operators (Hessian, GGN, Fisher) for PyTorch models.</p>
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
+<h1 id="api-reference">API reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<p>The library's public surface is re-exported from the top-level <code>hessian_eigenthings</code> package, so <code>from hessian_eigenthings import HessianOperator, lanczos, ...</code> works for everything below.</p>
+<p>The reference is split by area: <strong>operators</strong> are the curvature matrices you can multiply against (Hessian, GGN, Fisher, DDP-aware variants), <strong>algorithms</strong> are the iterative routines that consume them (Lanczos, power iteration, trace, spectral density), and <strong>loss functions</strong> are the small helpers for the most common loss-fn shapes.</p>
+<ul>
+<li><a href="../operators/">Operators →</a></li>
+<li><a href="../algorithms/">Algorithms →</a></li>
+<li><a href="../loss_fns/">Loss functions →</a></li>
+<li><a href="../param_utils/">Parameter selection →</a></li>
+</ul>
 
 
 

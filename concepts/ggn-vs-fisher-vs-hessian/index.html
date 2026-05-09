@@ -1135,7 +1135,35 @@
   <span class="md-ellipsis">
     
   
-    API
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
   
 
     
@@ -1192,6 +1220,34 @@
     
   
     Loss functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/param_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameter selection
   
 
     
@@ -1366,17 +1422,23 @@
 <h1 id="ggn-vs-fisher-vs-hessian">GGN vs Fisher vs Hessian<a class="headerlink" href="#ggn-vs-fisher-vs-hessian" title="Permanent link">&para;</a></h1>
 <p>These three matrices are easy to conflate and often called "the curvature" interchangeably. They are not the same. Read this page before deciding which operator to instantiate; mistaking one for another is the most common pitfall in curvature analysis.</p>
 <h2 id="the-setup">The setup<a class="headerlink" href="#the-setup" title="Permanent link">&para;</a></h2>
-<p>A model <span class="arithmatex">\(f_\theta(x)\)</span> produces an output (logits, regression mean, etc.). A per-sample loss <span class="arithmatex">\(\ell\)</span> takes the output and the target and returns a scalar. The empirical risk is <span class="arithmatex">\(L(\theta) = \frac{1}{N}\sum_i \ell(f_\theta(x_i), y_i)\)</span>.</p>
-<p>Let <span class="arithmatex">\(J = \partial f_\theta(x) / \partial \theta\)</span> be the model Jacobian (output dimension by parameter count) and <span class="arithmatex">\(H_\ell = \partial^2 \ell / \partial f^2\)</span> be the Hessian of the loss with respect to the model output.</p>
+<p>A model <span class="arithmatex">\(f_\theta(x)\)</span> produces an output (logits of dimension <span class="arithmatex">\(C\)</span>, regression mean of dimension <span class="arithmatex">\(C\)</span>, etc.). A per-sample loss <span class="arithmatex">\(\ell\)</span> takes the output and the target and returns a scalar. The empirical risk is <span class="arithmatex">\(L(\theta) = \frac{1}{N}\sum_i \ell(f_\theta(x_i), y_i)\)</span>.</p>
+<p>Two derivatives appear repeatedly:</p>
+<ul>
+<li><span class="arithmatex">\(J = \partial f_\theta(x) / \partial \theta\)</span> is the model Jacobian. Shape <span class="arithmatex">\(C \times n\)</span> where <span class="arithmatex">\(n\)</span> is the parameter count.</li>
+<li><span class="arithmatex">\(H_\ell = \partial^2 \ell / \partial f^2\)</span> is the Hessian of the loss with respect to the <em>model output</em>. Shape <span class="arithmatex">\(C \times C\)</span>. Cheap to compute since <span class="arithmatex">\(C\)</span> is small (e.g. number of classes).</li>
+</ul>
+<p>These are not the same as the parameter-space Hessian <span class="arithmatex">\(H\)</span> defined below. <span class="arithmatex">\(H\)</span> is <span class="arithmatex">\(n \times n\)</span>; <span class="arithmatex">\(H_\ell\)</span> is <span class="arithmatex">\(C \times C\)</span>. Easy to conflate by name; very different by dimension.</p>
 <h2 id="the-three-matrices">The three matrices<a class="headerlink" href="#the-three-matrices" title="Permanent link">&para;</a></h2>
 <h3 id="1-hessian">1. Hessian<a class="headerlink" href="#1-hessian" title="Permanent link">&para;</a></h3>
-<div class="arithmatex">\[H \;=\; \frac{\partial^2 L}{\partial \theta^2}\]</div>
-<p>Direct second derivative of the loss. Includes the loss-curvature term <em>and</em> a model-curvature term involving the second derivative of <span class="arithmatex">\(f_\theta\)</span> with respect to <span class="arithmatex">\(\theta\)</span>.</p>
+<div class="arithmatex">\[H \;=\; \frac{\partial^2 L}{\partial \theta^2} \;=\; J^\top H_\ell J \;+\; \sum_{c=1}^{C} \frac{\partial \ell}{\partial f_c} \cdot \frac{\partial^2 f_c}{\partial \theta^2}\]</div>
+<p>Direct second derivative of the loss with respect to parameters. Shape <span class="arithmatex">\(n \times n\)</span>. The first term is the GGN; the second term — sum over output coordinates of the loss-residual times the model's own second derivative — is what makes the Hessian different from the GGN.</p>
 <p>May be <strong>indefinite</strong> at saddle points. This is what you want for sharpness analysis at a critical point.</p>
 <p>In code: <a href="../../reference/api/"><code>HessianOperator</code></a>.</p>
 <h3 id="2-generalized-gauss-newton-ggn">2. Generalized Gauss-Newton (GGN)<a class="headerlink" href="#2-generalized-gauss-newton-ggn" title="Permanent link">&para;</a></h3>
 <div class="arithmatex">\[G \;=\; J^\top H_\ell J\]</div>
-<p>Drops the model-curvature term, keeping only the part of <span class="arithmatex">\(H\)</span> that flows through the model Jacobian. For convex per-sample losses (cross-entropy + softmax, MSE), <span class="arithmatex">\(H_\ell\)</span> is PSD, so <span class="arithmatex">\(G\)</span> is <strong>PSD by construction</strong> — useful when you need a positive semidefinite preconditioner.</p>
+<p>Shape <span class="arithmatex">\(n \times n\)</span>. Drops the model-curvature term, keeping only the part of <span class="arithmatex">\(H\)</span> that flows through the model Jacobian. For convex per-sample losses (cross-entropy + softmax, MSE), <span class="arithmatex">\(H_\ell\)</span> is PSD, so <span class="arithmatex">\(G\)</span> is <strong>PSD by construction</strong> — useful when you need a positive semidefinite preconditioner.</p>
+<p>At a global minimum where the loss residuals <span class="arithmatex">\(\partial \ell / \partial f_c\)</span> vanish, the dropped term is zero and <span class="arithmatex">\(H = G\)</span>.</p>
 <p>For cross-entropy + softmax classification, <span class="arithmatex">\(G\)</span> equals the Fisher information matrix exactly.</p>
 <p>In code: <a href="../../reference/api/"><code>GGNOperator</code></a>.</p>
 <h3 id="3-fisher-and-empirical-fisher">3. Fisher (and empirical Fisher)<a class="headerlink" href="#3-fisher-and-empirical-fisher" title="Permanent link">&para;</a></h3>

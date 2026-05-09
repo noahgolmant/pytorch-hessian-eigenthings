@@ -80,4 +80,12 @@
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/loss_fns/</loc>
          <lastmod>2026-05-09</lastmod>
     </url>
+    <url>
+         <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/operators/</loc>
+         <lastmod>2026-05-09</lastmod>
+    </url>
+    <url>
+         <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/param_utils/</loc>
+         <lastmod>2026-05-09</lastmod>
+    </url>
 </urlset>
