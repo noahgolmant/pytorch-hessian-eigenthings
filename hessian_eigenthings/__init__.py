@@ -44,7 +44,7 @@ from hessian_eigenthings.param_utils import (
     vector_to_params,
 )
 
-__version__ = "1.0.0a1"
+__version__ = "1.0.0a2"
 
 __all__ = [
     "CurvatureOperator",
