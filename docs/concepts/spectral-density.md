@@ -8,12 +8,12 @@ For a trained neural network this density typically has a large bulk concentrate
 
 ## Stochastic Lanczos Quadrature (SLQ)
 
-Computing $\phi$ exactly requires the full eigendecomposition. Ubaru/Chen/Saad 2017 give a stochastic estimator that costs $O(\text{num\_runs} \times \text{lanczos\_steps})$ matvecs.
+Computing $\phi$ exactly requires the full eigendecomposition. Ubaru/Chen/Saad 2017 give a stochastic estimator that costs $O(n_v \cdot m)$ matvecs, where $n_v$ is the number of random init vectors and $m$ is the number of Lanczos steps per init.
 
 For each of $n_v$ random Rademacher init vectors $v_l$:
 
 1. Run $m$ Lanczos steps from $v_l$ to obtain a tridiagonal $T_m^{(l)}$.
-2. Eigendecompose $T_m^{(l)}$: nodes $\theta_k^{(l)} = $ eigenvalues, weights $\tau_k^{(l)} = (e_1^\top y_k)^2$ where $y_k$ is the $k$-th eigenvector and $e_1 = (1, 0, \ldots, 0)$.
+2. Eigendecompose $T_m^{(l)}$. The nodes $\theta_k^{(l)}$ are the eigenvalues of $T_m^{(l)}$, and the weights $\tau_k^{(l)} = (e_1^\top y_k)^2$ are the squared first components of its eigenvectors $y_k$, where $e_1 = (1, 0, \ldots, 0)$.
 3. The smoothed density is the average over runs of a sum of Gaussian-blurred contributions:
 
 $$\phi(t) \;\approx\; \frac{1}{n_v} \sum_{l=1}^{n_v} \sum_{k=1}^m (\tau_k^{(l)})^2 \, g_\sigma(t - \theta_k^{(l)})$$

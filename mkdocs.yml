@@ -88,6 +88,8 @@ nav:
       - Custom loss functions: how-to/custom-loss-functions.md
       - Custom curvature operators: how-to/custom-curvature-operators.md
   - Reference:
-      - API: reference/api.md
+      - Overview: reference/api.md
+      - Operators: reference/operators.md
       - Algorithms: reference/algorithms.md
       - Loss functions: reference/loss_fns.md
+      - Parameter selection: reference/param_utils.md
