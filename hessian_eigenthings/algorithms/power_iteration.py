@@ -123,14 +123,23 @@ def deflated_power_iteration(
             current_op = _deflate(current_op, lam, vec, backend)
 
     vals = torch.tensor(eigenvalues, dtype=operator.dtype, device=operator.device)
-    vecs = torch.stack(eigenvectors, dim=0)
     res_t = torch.tensor(residuals, dtype=operator.dtype, device=operator.device)
     conv_t = torch.tensor(converged_flags, dtype=torch.bool, device=operator.device)
+
+    # Build the (k, n) eigenvector matrix by copying each vector into its
+    # final row, instead of torch.stack which materializes the list as one
+    # contiguous block. At LLM scale a single torch.stack of k=10 vectors of
+    # n=162M params is 6.5 GB allocated in one shot; row-by-row copy is the
+    # same total memory but no transient peak from the stacking allocator.
+    n = eigenvectors[0].shape[0]
+    vecs = torch.empty(k, n, dtype=operator.dtype, device=operator.device)
+    for i, v in enumerate(eigenvectors):
+        vecs[i].copy_(v)
 
     order = torch.argsort(vals.abs(), descending=True)
     return EigenResult(
         eigenvalues=vals[order],
-        eigenvectors=vecs[order],
+        eigenvectors=vecs[order.cpu()] if vecs.device != order.device else vecs[order],
         residuals=res_t[order],
         iterations=total_iters,
         converged=conv_t[order],

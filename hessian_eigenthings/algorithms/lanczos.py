@@ -166,16 +166,15 @@ def lanczos(
     sel = order[:k]
     eigenvalues = theta[sel]
 
-    # Accumulate Ritz vectors column-by-column instead of materializing the full
-    # (n, m) basis matrix. The basis takes O(n * m) memory; for an LLM-scale n
-    # and m ~= 30 that's tens of GB and a single torch.stack OOMs the GPU.
-    # This loop touches each basis vector once and only allocates O(n * k).
+    # Accumulate Ritz vectors directly into the final (k, n) layout via rank-1
+    # outer-product updates. Avoids both the (n, m) basis matrix and the
+    # transient (n, k) -> (k, n) transpose-copy, which together would peak at
+    # >2x the final eigenvector size at LLM scale.
     s_sel = s[:, sel]
     n = td.basis[0].shape[0]
-    eigenvectors = torch.zeros(n, sel.shape[0], dtype=operator.dtype, device=operator.device)
+    eigenvectors = torch.zeros(sel.shape[0], n, dtype=operator.dtype, device=operator.device)
     for j, basis_vec in enumerate(td.basis):
-        eigenvectors.add_(basis_vec.unsqueeze(1) * s_sel[j].unsqueeze(0))
-    eigenvectors = eigenvectors.t().contiguous()
+        eigenvectors.addr_(s_sel[j], basis_vec)
 
     last_components = s[-1, sel]
     residuals = last_components.abs() * td.last_beta
