@@ -37,6 +37,7 @@ pyhessian = ["pyhessian>=0.1"]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "pytest-markdown-docs>=0.6",
     "ruff>=0.6",
     "black>=24.0",
     "mypy>=1.10",
@@ -95,6 +96,7 @@ markers = [
     "transformer_lens: requires transformer_lens",
     "gpu: requires CUDA",
     "distributed: requires multiple ranks",
+    "skip_docs: docs code block that requires resources unavailable in CI",
 ]
 
 [tool.coverage.run]

@@ -67,3 +67,32 @@ jobs:
           enable-cache: true
       - run: uv sync --group dev --extra transformers --extra transformer-lens
       - run: uv run pytest -m "transformers or transformer_lens" || [ $? -eq 5 ]
+
+  test-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --group dev --extra transformers --extra transformer-lens
+      - name: supervised_mlp
+        run: timeout 60 uv run python examples/supervised_mlp.py
+      - name: huggingface_tiny_gpt2
+        run: timeout 120 uv run python examples/huggingface_tiny_gpt2.py
+      - name: transformer_lens_attention_only
+        run: timeout 180 uv run python examples/transformer_lens_attention_only.py
+
+  test-docs-codeblocks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --group dev --extra transformers --extra transformer-lens
+      # Only the quickstart pages have fully self-contained, runnable code.
+      # Concept/how-to pages use placeholder identifiers (model, loader, ...)
+      # to illustrate API shape; those snippets are checked by example scripts
+      # in test-examples instead.
+      - run: uv run pytest --markdown-docs docs/getting-started/
