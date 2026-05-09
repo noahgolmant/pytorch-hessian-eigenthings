@@ -54,7 +54,9 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --group dev --extra curvlinops
-      - run: uv run pytest -m curvlinops
+      # Tolerate exit code 5 ("no tests collected") so the job stays green
+      # if all curvlinops-marked tests are removed in some future refactor.
+      - run: uv run pytest -m curvlinops || [ $? -eq 5 ]
 
   test-extras:
     runs-on: ubuntu-latest
@@ -64,4 +66,4 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --group dev --extra transformers --extra transformer-lens
-      - run: uv run pytest -m "transformers or transformer_lens"
+      - run: uv run pytest -m "transformers or transformer_lens" || [ $? -eq 5 ]
