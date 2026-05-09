@@ -4,6 +4,10 @@ The `hessian-eigenthings` module provides an efficient (and scalable!) way to co
 
 > **v1.0.0a1**: alpha release. The original `0.x` API has been removed; pin `hessian-eigenthings==0.0.2` if you depend on it.
 
+## Documentation
+
+Full docs at <https://noahgolmant.github.io/pytorch-hessian-eigenthings>. There are concept pages explaining the math behind each algorithm, how-to recipes for common workflows, and an auto-generated API reference. The [GGN vs Fisher vs Hessian](https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/ggn-vs-fisher-vs-hessian/) page is worth reading before deciding which operator to instantiate. They're easy to conflate.
+
 ## Why use this?
 
 The eigenvalues and eigenvectors of the Hessian have been implicated in many generalization properties of neural networks. People hypothesize that "flat minima" with lower eigenvalues generalize better, that the Hessians of large models are very low-rank, that certain optimizers lead to flatter or sharper minima, and so on. But computing and storing the full Hessian requires memory that is quadratic in the number of parameters, which is infeasible for anything but toy models.
@@ -65,10 +69,6 @@ The [`examples/`](examples/) directory has three runnable scripts:
 - `supervised_mlp.py`: top-k eigenvalues, Hutch++ trace, and SLQ density on a small synthetic-data MLP. No downloads, runs in seconds.
 - `huggingface_tiny_gpt2.py`: full and attention-only Hessian of a HuggingFace causal LM (`sshleifer/tiny-gpt2`).
 - `transformer_lens_attention_only.py`: per-block (attention vs MLP) Hessian on a TransformerLens model.
-
-## Documentation
-
-Full docs at <https://noahgolmant.github.io/pytorch-hessian-eigenthings>. There are concept pages explaining the math behind each algorithm, how-to recipes for common workflows, and an auto-generated API reference. The [GGN vs Fisher vs Hessian](https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/ggn-vs-fisher-vs-hessian/) page is worth reading before deciding which operator to instantiate. They're easy to conflate.
 
 ## Working on the library
 
