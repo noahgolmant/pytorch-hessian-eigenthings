@@ -1,7 +1,7 @@
 """HessianOperator: matrix-free Hessian-vector product over (a subset of) model parameters."""
 
 from collections.abc import Callable, Iterable, Iterator
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from torch import nn
@@ -20,10 +20,33 @@ from hessian_eigenthings.param_utils import (
 )
 
 LossFn = Callable[[nn.Module, Any], torch.Tensor]
+HvpMethod = Literal["autograd", "finite_difference"]
+
+# Roughly machine_eps^(1/3) per dtype — the optimal central-difference step
+# balancing O(eps^2) truncation against O(eps_machine / eps) roundoff.
+_FD_EPS_BY_DTYPE = {
+    torch.float64: 6e-6,
+    torch.float32: 5e-3,
+    torch.bfloat16: 0.2,
+    torch.float16: 5e-2,
+}
 
 
 class HessianOperator(CurvatureOperator):
-    """Hessian of `loss_fn(model, batch)` averaged over batches in `dataloader`."""
+    """Hessian of `loss_fn(model, batch)` averaged over batches in `dataloader`.
+
+    Two HVP methods are supported via `method=`:
+
+    * ``"autograd"`` (default): exact double-backward via `torch.autograd.grad` with
+      `create_graph=True`. Numerically exact (to rounding); ideal for single-device
+      analysis up to ~7B parameters.
+
+    * ``"finite_difference"``: central-difference `(∇L(θ+εv) − ∇L(θ−εv)) / 2ε` per
+      Granziol & Juarev 2026. Two normal forward+backward passes per HVP, no
+      second-backward graph anywhere — works with FSDP/HSDP/TP without any
+      special handling. Trade-off: O(ε²) truncation bias plus precision-dependent
+      roundoff (~1e-5 fp32, ~1e-2 bf16). Suitable for spectral analysis at scale.
+    """
 
     def __init__(
         self,
@@ -36,6 +59,8 @@ class HessianOperator(CurvatureOperator):
         num_batches: int | None = None,
         microbatch_size: int | None = None,
         microbatch_unsafe: bool = False,
+        method: HvpMethod = "autograd",
+        fd_eps: float | None = None,
         backend: LinAlgBackend[torch.Tensor] | None = None,
     ) -> None:
         self.model = model
@@ -44,6 +69,7 @@ class HessianOperator(CurvatureOperator):
         self.full_dataset = full_dataset
         self.num_batches = num_batches
         self.microbatch_size = microbatch_size
+        self.method: HvpMethod = method
         self.backend: LinAlgBackend[torch.Tensor] = backend or SingleDeviceBackend()
 
         if microbatch_size is not None and not microbatch_unsafe:
@@ -57,6 +83,8 @@ class HessianOperator(CurvatureOperator):
         first = self._param_list[0]
         self._device = first.device
         self._dtype = first.dtype
+
+        self.fd_eps = fd_eps if fd_eps is not None else _FD_EPS_BY_DTYPE.get(self._dtype, 1e-3)
 
         self._batch_iter: Iterator[Any] | None = None
 
@@ -100,10 +128,42 @@ class HessianOperator(CurvatureOperator):
         return self._hvp_microbatched(v_split, batch)
 
     def _hvp(self, v_split: list[torch.Tensor], batch: Any) -> torch.Tensor:
+        if self.method == "autograd":
+            return self._hvp_autograd(v_split, batch)
+        if self.method == "finite_difference":
+            return self._hvp_finite_difference(v_split, batch)
+        raise ValueError(f"unknown method={self.method!r}")  # pragma: no cover
+
+    def _hvp_autograd(self, v_split: list[torch.Tensor], batch: Any) -> torch.Tensor:
         loss = self.loss_fn(self.model, batch)
         grads = torch.autograd.grad(loss, self._param_list, create_graph=True)
         hvp = torch.autograd.grad(grads, self._param_list, grad_outputs=v_split)
         return torch.cat([h.reshape(-1) for h in hvp])
+
+    def _hvp_finite_difference(self, v_split: list[torch.Tensor], batch: Any) -> torch.Tensor:
+        eps = self.fd_eps
+        snapshot = [p.detach().clone() for p in self._param_list]
+        try:
+            with torch.no_grad():
+                for p, dv in zip(self._param_list, v_split, strict=True):
+                    p.add_(dv, alpha=eps)
+            g_plus = self._compute_grad_flat(batch)
+
+            with torch.no_grad():
+                for p, dv in zip(self._param_list, v_split, strict=True):
+                    p.add_(dv, alpha=-2.0 * eps)
+            g_minus = self._compute_grad_flat(batch)
+        finally:
+            with torch.no_grad():
+                for p, snap in zip(self._param_list, snapshot, strict=True):
+                    p.copy_(snap)
+
+        return (g_plus - g_minus) / (2.0 * eps)
+
+    def _compute_grad_flat(self, batch: Any) -> torch.Tensor:
+        loss = self.loss_fn(self.model, batch)
+        grads = torch.autograd.grad(loss, self._param_list)
+        return torch.cat([g.reshape(-1).detach() for g in grads])
 
     def _hvp_microbatched(self, v_split: list[torch.Tensor], batch: Any) -> torch.Tensor:
         assert self.microbatch_size is not None
