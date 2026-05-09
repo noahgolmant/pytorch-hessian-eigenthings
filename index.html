@@ -322,10 +322,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#sections" class="md-nav__link">
+  <a href="#where-to-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sections
+        Where to start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
       
     </span>
   </a>
@@ -1199,10 +1210,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#sections" class="md-nav__link">
+  <a href="#where-to-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sections
+        Where to start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
       
     </span>
   </a>
@@ -1230,15 +1252,21 @@
 
 
 <h1 id="hessian-eigenthings">hessian-eigenthings<a class="headerlink" href="#hessian-eigenthings" title="Permanent link">&para;</a></h1>
-<p>Iterative eigendecomposition of curvature operators (Hessian, GGN, Fisher) for PyTorch models.</p>
-<p>This site documents the v1 alpha. See the <a href="https://github.com/noahgolmant/pytorch-hessian-eigenthings">GitHub repository</a> for source.</p>
-<h2 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h2>
+<p>Iterative eigendecomposition of curvature operators (Hessian, GGN, empirical Fisher) for arbitrary PyTorch models, including HuggingFace and TransformerLens transformers. Top eigenvalues via Lanczos or power iteration, trace via Hutch++, and the spectral density via Stochastic Lanczos Quadrature, all matrix-free.</p>
+<p>The full Hessian of a model with <span class="arithmatex">\(n\)</span> parameters costs <span class="arithmatex">\(O(n^2)\)</span> memory, infeasible past toy scale. Iterative methods only need Hessian-vector products, which cost <span class="arithmatex">\(O(n)\)</span>. That's what this library is built around.</p>
+<h2 id="where-to-start">Where to start<a class="headerlink" href="#where-to-start" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="getting-started/installation/">Getting started</a></strong>: install and run your first eigendecomposition.</li>
-<li><strong><a href="concepts/what-is-the-hessian/">Concepts</a></strong>: what these algorithms compute and when to use which.</li>
-<li><strong><a href="how-to/analyze-a-huggingface-model/">How-to</a></strong>: task-oriented recipes.</li>
-<li><strong><a href="reference/api/">Reference</a></strong>: auto-generated API documentation.</li>
+<li><strong><a href="getting-started/quickstart/">Quickstart</a></strong>: 30-second example on a small MLP.</li>
+<li><strong><a href="getting-started/transformers-quickstart/">Transformers quickstart</a></strong>: same shape, on a HuggingFace causal LM.</li>
+<li><strong><a href="concepts/what-is-the-hessian/">Concepts</a></strong>: what each algorithm computes and when to pick which. The <a href="concepts/ggn-vs-fisher-vs-hessian/">GGN vs Fisher vs Hessian</a> page is worth reading early since they're easy to conflate.</li>
+<li><strong><a href="how-to/analyze-a-huggingface-model/">How-to recipes</a></strong>: task-oriented walkthroughs.</li>
+<li><strong><a href="reference/api/">API reference</a></strong>: every public symbol.</li>
 </ul>
+<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>hessian-eigenthings
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;hessian-eigenthings[transformers,transformer-lens]&quot;</span><span class="w">   </span><span class="c1"># with helpers</span>
+</code></pre></div>
+<p>Source on GitHub: <a href="https://github.com/noahgolmant/pytorch-hessian-eigenthings">https://github.com/noahgolmant/pytorch-hessian-eigenthings</a>.</p>
 
 
 
