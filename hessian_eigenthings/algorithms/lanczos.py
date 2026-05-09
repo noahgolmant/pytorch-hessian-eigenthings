@@ -6,6 +6,7 @@ eigenvalues and loss-of-orthogonality that classical Lanczos is famous for
 default it off; users analyzing near-degenerate spectra should turn it back on.
 """
 
+from dataclasses import dataclass
 from typing import Literal
 
 import torch
@@ -17,6 +18,86 @@ from hessian_eigenthings.operators.base import CurvatureOperator
 _EPS = 1e-12
 
 Which = Literal["LM", "LA", "SA"]
+
+
+@dataclass(frozen=True)
+class LanczosTridiag:
+    """Output of one Lanczos run: tridiagonal coefficients + the basis used to build them."""
+
+    alphas: torch.Tensor  # (m,) diagonal
+    betas: torch.Tensor  # (m-1,) off-diagonal
+    basis: list[torch.Tensor]  # length m, each (n,)
+    last_beta: float  # ||r_m|| residual norm at termination
+    iterations: int  # m, the actual number of Lanczos steps completed
+
+
+def lanczos_tridiagonal(
+    operator: CurvatureOperator,
+    v0: torch.Tensor,
+    max_iter: int,
+    *,
+    reorthogonalize: bool = True,
+    backend: LinAlgBackend[torch.Tensor] | None = None,
+) -> LanczosTridiag:
+    """Run `max_iter` Lanczos steps from `v0` and return the tridiagonal + basis.
+
+    Public so SLQ and other quadrature consumers can reuse the same Lanczos kernel.
+    """
+    backend = backend or SingleDeviceBackend()
+
+    nrm0 = backend.norm(v0)
+    if nrm0.item() < _EPS:
+        raise ValueError("v0 has near-zero norm")
+    v = backend.scale(1.0 / nrm0, v0)
+
+    basis: list[torch.Tensor] = [v]
+    alphas_list: list[float] = []
+    betas_list: list[float] = []
+    prev_v = backend.zeros_like(v)
+    beta = 0.0
+    last_beta = 0.0
+    iterations = 0
+
+    for j in range(max_iter):
+        iterations = j + 1
+        av = operator.matvec(basis[j])
+        if j > 0:
+            av = backend.axpy(-beta, prev_v, av)
+
+        alpha = backend.dot(basis[j], av).item()
+        alphas_list.append(alpha)
+        av = backend.axpy(-alpha, basis[j], av)
+
+        if reorthogonalize:
+            for vi in basis:
+                av = backend.axpy(-backend.dot(vi, av).item(), vi, av)
+
+        beta_next = backend.norm(av).item()
+        last_beta = beta_next
+        if beta_next < _EPS:
+            break
+        if j < max_iter - 1:
+            betas_list.append(beta_next)
+            prev_v = basis[j]
+            basis.append(backend.scale(1.0 / beta_next, av))
+            beta = beta_next
+
+    alphas = torch.tensor(alphas_list, dtype=operator.dtype, device=operator.device)
+    betas = torch.tensor(betas_list, dtype=operator.dtype, device=operator.device)
+    return LanczosTridiag(
+        alphas=alphas, betas=betas, basis=basis, last_beta=last_beta, iterations=iterations
+    )
+
+
+def _build_tridiag_matrix(td: LanczosTridiag) -> torch.Tensor:
+    m = td.alphas.shape[0]
+    out = torch.zeros(m, m, dtype=td.alphas.dtype, device=td.alphas.device)
+    out.diagonal().copy_(td.alphas)
+    if m > 1 and td.betas.numel() > 0:
+        off = td.betas[: m - 1]
+        out.diagonal(1).copy_(off)
+        out.diagonal(-1).copy_(off)
+    return out
 
 
 def lanczos(
@@ -64,49 +145,13 @@ def lanczos(
     gen = torch.Generator(device="cpu")
     if seed is not None:
         gen.manual_seed(seed)
-    v = torch.randn(n, dtype=operator.dtype, generator=gen).to(operator.device)
-    v = backend.scale(1.0 / backend.norm(v), v)
+    v0 = torch.randn(n, dtype=operator.dtype, generator=gen).to(operator.device)
 
-    basis: list[torch.Tensor] = [v]
-    alphas: list[float] = []
-    betas: list[float] = []
-    prev_v = backend.zeros_like(v)
-    beta = 0.0
-    last_beta = 0.0
-    iterations = 0
+    td = lanczos_tridiagonal(
+        operator, v0, max_iter, reorthogonalize=reorthogonalize, backend=backend
+    )
 
-    for j in range(max_iter):
-        iterations = j + 1
-        av = operator.matvec(basis[j])
-        if j > 0:
-            av = backend.axpy(-beta, prev_v, av)
-
-        alpha = backend.dot(basis[j], av).item()
-        alphas.append(alpha)
-        av = backend.axpy(-alpha, basis[j], av)
-
-        if reorthogonalize:
-            for vi in basis:
-                av = backend.axpy(-backend.dot(vi, av).item(), vi, av)
-
-        beta_next = backend.norm(av).item()
-        last_beta = beta_next
-        if beta_next < _EPS:
-            break
-        if j < max_iter - 1:
-            betas.append(beta_next)
-            prev_v = basis[j]
-            basis.append(backend.scale(1.0 / beta_next, av))
-            beta = beta_next
-
-    m = len(alphas)
-    tridiag = torch.zeros(m, m, dtype=operator.dtype, device=operator.device)
-    tridiag.diagonal().copy_(torch.tensor(alphas, dtype=operator.dtype, device=operator.device))
-    if m > 1 and betas:
-        off = torch.tensor(betas[: m - 1], dtype=operator.dtype, device=operator.device)
-        tridiag.diagonal(1).copy_(off)
-        tridiag.diagonal(-1).copy_(off)
-
+    tridiag = _build_tridiag_matrix(td)
     theta, s = torch.linalg.eigh(tridiag)
 
     if which == "LM":
@@ -121,12 +166,12 @@ def lanczos(
     sel = order[:k]
     eigenvalues = theta[sel]
 
-    basis_mat = torch.stack(basis, dim=1)
+    basis_mat = torch.stack(td.basis, dim=1)
     s_sel = s[:, sel]
     eigenvectors = (basis_mat @ s_sel).t().contiguous()
 
     last_components = s[-1, sel]
-    residuals = last_components.abs() * last_beta
+    residuals = last_components.abs() * td.last_beta
 
     converged = residuals < tol * eigenvalues.abs().clamp(min=_EPS)
 
@@ -134,6 +179,6 @@ def lanczos(
         eigenvalues=eigenvalues,
         eigenvectors=eigenvectors,
         residuals=residuals,
-        iterations=iterations,
+        iterations=td.iterations,
         converged=converged,
     )
