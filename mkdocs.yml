@@ -1,0 +1,93 @@
+site_name: hessian-eigenthings
+site_description: Iterative eigendecomposition of curvature operators for PyTorch models.
+site_url: https://noahgolmant.github.io/pytorch-hessian-eigenthings/
+repo_url: https://github.com/noahgolmant/pytorch-hessian-eigenthings
+repo_name: noahgolmant/pytorch-hessian-eigenthings
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Transformers quickstart: getting-started/transformers-quickstart.md
+  - Concepts:
+      - What is the Hessian: concepts/what-is-the-hessian.md
+      - Why HVP, not full H: concepts/why-hvp-not-full-h.md
+      - Top-k eigenvalues: concepts/top-k-eigenvalues.md
+      - Trace estimation: concepts/trace-estimation.md
+      - Spectral density: concepts/spectral-density.md
+      - GGN vs Fisher vs Hessian: concepts/ggn-vs-fisher-vs-hessian.md
+      - Numerical stability: concepts/numerical-stability.md
+  - How-to:
+      - Analyze a HuggingFace model: how-to/analyze-a-huggingface-model.md
+      - Analyze with TransformerLens: how-to/analyze-with-transformer-lens.md
+      - Per-layer Hessian: how-to/per-layer-hessian.md
+      - Distributed (DDP): how-to/distributed-ddp.md
+      - Custom loss functions: how-to/custom-loss-functions.md
+      - Custom curvature operators: how-to/custom-curvature-operators.md
+  - Reference:
+      - API: reference/api.md
+      - Algorithms: reference/algorithms.md
+      - Loss functions: reference/loss_fns.md
