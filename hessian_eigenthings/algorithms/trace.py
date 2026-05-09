@@ -93,21 +93,37 @@ def hutch_plus_plus(
     gen = _generator(seed)
     probe = torch.empty(n, dtype=operator.dtype, device=operator.device)
 
-    sketch = _rademacher_matrix(probe, m_per, gen, backend)
-    a_sketch = _apply_columnwise(operator, sketch)
+    # Phase 1: build AS column-by-column. We never materialize S (the random
+    # sketch) as a single (n, m_per) tensor; we generate one column, apply A,
+    # store the result column. Cuts peak memory by ~50% at LLM scale.
+    a_sketch = torch.empty(n, m_per, dtype=operator.dtype, device=operator.device)
+    for i in range(m_per):
+        s_i = backend.rademacher_like(probe, generator=gen)
+        a_sketch[:, i] = operator.matvec(s_i)
 
     q = _thin_qr(a_sketch)
+    del a_sketch  # free ~n*m_per*4 bytes before the next phase
+    # QR returns min(n, m_per) columns; for tiny operators (n < m_per) this is
+    # less than m_per, and the residual phase below should still use m_per.
+    q_cols = q.shape[1]
 
-    g = _rademacher_matrix(probe, m_per, gen, backend)
-    g_perp = g - q @ (q.t() @ g)
+    # Phase 2: trace_low = trace(Q^T A Q). Accumulate q_i^T (A q_i) per column;
+    # never materialize AQ as a single (n, q_cols) tensor.
+    trace_low = 0.0
+    for i in range(q_cols):
+        aq_i = operator.matvec(q[:, i])
+        trace_low += backend.dot(q[:, i], aq_i).item()
 
-    a_q = _apply_columnwise(operator, q)
-    trace_low = (q.t() @ a_q).diagonal().sum().item()
+    # Phase 3: residual Hutchinson on (I - QQ^T) A (I - QQ^T). Stream column-
+    # by-column: generate g_i, project out Q's span, apply A, accumulate sample.
+    per_sample = torch.empty(m_per, dtype=operator.dtype, device=operator.device)
+    for i in range(m_per):
+        g_i = backend.rademacher_like(probe, generator=gen)
+        g_perp = g_i - q @ (q.t() @ g_i)
+        a_g_perp = operator.matvec(g_perp)
+        per_sample[i] = (g_perp * a_g_perp).sum()
 
-    a_g_perp = _apply_columnwise(operator, g_perp)
-    per_sample = (g_perp * a_g_perp).sum(dim=0)
     trace_residual = per_sample.mean().item()
-
     estimate = trace_low + trace_residual
     stderr = (per_sample.std(unbiased=True) / (m_per**0.5)).item() if m_per > 1 else float("nan")
     return TraceResult(estimate=estimate, stderr=stderr, samples=per_sample)
@@ -131,19 +147,6 @@ def _draw(
     if dist == "gaussian":
         return backend.randn_like(probe, generator=gen)
     raise ValueError(f"unknown distribution={dist!r}")  # pragma: no cover
-
-
-def _rademacher_matrix(
-    probe: torch.Tensor,
-    cols: int,
-    gen: torch.Generator,
-    backend: LinAlgBackend[torch.Tensor],
-) -> torch.Tensor:
-    return torch.stack([backend.rademacher_like(probe, generator=gen) for _ in range(cols)], dim=1)
-
-
-def _apply_columnwise(operator: CurvatureOperator, mat: torch.Tensor) -> torch.Tensor:
-    return torch.stack([operator.matvec(mat[:, i]) for i in range(mat.shape[1])], dim=1)
 
 
 def _thin_qr(mat: torch.Tensor) -> torch.Tensor:
