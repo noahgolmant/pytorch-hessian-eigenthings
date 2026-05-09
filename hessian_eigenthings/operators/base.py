@@ -35,6 +35,9 @@ class CurvatureOperator(ABC):
     def __call__(self, v: torch.Tensor) -> torch.Tensor:
         return self.matvec(v)
 
+    def __matmul__(self, v: torch.Tensor) -> torch.Tensor:
+        return self.matvec(v)
+
 
 class LambdaOperator(CurvatureOperator):
     """Wrap a callable as a CurvatureOperator. Useful for tests and ad-hoc operators."""
