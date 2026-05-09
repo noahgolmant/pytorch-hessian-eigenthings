@@ -26,7 +26,7 @@ The classic central difference:
 
 $$Hv \;\approx\; \frac{\nabla L(\theta + \varepsilon v) \;-\; \nabla L(\theta - \varepsilon v)}{2\varepsilon}$$
 
-Two normal forward+backward passes, no second-backward graph anywhere. This is the technique Granziol & Juarev 2026 (arXiv:2602.00816) revive at LLM scale, because FSDP detaches its gradient collectives from the autograd graph, breaking double-backward. Finite difference doesn't care.
+Two normal forward+backward passes, no second-backward graph anywhere. This is the technique Granziol & Juarev 2026 (arXiv:2602.00816) revive at LLM scale, because **Fully Sharded Data Parallel (FSDP)** — PyTorch's standard mechanism for training models too large to fit on a single device — detaches its gradient collectives from the autograd graph, breaking double-backward. Finite difference doesn't care: it only uses first-order gradients, which FSDP handles correctly out of the box.
 
 Use via `HessianOperator(method="finite_difference")`. See [Numerical stability](numerical-stability.md) for how to pick $\varepsilon$.
 

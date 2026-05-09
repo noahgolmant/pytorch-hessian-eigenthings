@@ -4,17 +4,22 @@ These three matrices are easy to conflate and often called "the curvature" inter
 
 ## The setup
 
-A model $f_\theta(x)$ produces an output (logits, regression mean, etc.). A per-sample loss $\ell$ takes the output and the target and returns a scalar. The empirical risk is $L(\theta) = \frac{1}{N}\sum_i \ell(f_\theta(x_i), y_i)$.
+A model $f_\theta(x)$ produces an output (logits of dimension $C$, regression mean of dimension $C$, etc.). A per-sample loss $\ell$ takes the output and the target and returns a scalar. The empirical risk is $L(\theta) = \frac{1}{N}\sum_i \ell(f_\theta(x_i), y_i)$.
 
-Let $J = \partial f_\theta(x) / \partial \theta$ be the model Jacobian (output dimension by parameter count) and $H_\ell = \partial^2 \ell / \partial f^2$ be the Hessian of the loss with respect to the model output.
+Two derivatives appear repeatedly:
+
+- $J = \partial f_\theta(x) / \partial \theta$ is the model Jacobian. Shape $C \times n$ where $n$ is the parameter count.
+- $H_\ell = \partial^2 \ell / \partial f^2$ is the Hessian of the loss with respect to the *model output*. Shape $C \times C$. Cheap to compute since $C$ is small (e.g. number of classes).
+
+These are not the same as the parameter-space Hessian $H$ defined below. $H$ is $n \times n$; $H_\ell$ is $C \times C$. Easy to conflate by name; very different by dimension.
 
 ## The three matrices
 
 ### 1. Hessian
 
-$$H \;=\; \frac{\partial^2 L}{\partial \theta^2}$$
+$$H \;=\; \frac{\partial^2 L}{\partial \theta^2} \;=\; J^\top H_\ell J \;+\; \sum_{c=1}^{C} \frac{\partial \ell}{\partial f_c} \cdot \frac{\partial^2 f_c}{\partial \theta^2}$$
 
-Direct second derivative of the loss. Includes the loss-curvature term *and* a model-curvature term involving the second derivative of $f_\theta$ with respect to $\theta$.
+Direct second derivative of the loss with respect to parameters. Shape $n \times n$. The first term is the GGN; the second term — sum over output coordinates of the loss-residual times the model's own second derivative — is what makes the Hessian different from the GGN.
 
 May be **indefinite** at saddle points. This is what you want for sharpness analysis at a critical point.
 
@@ -24,7 +29,9 @@ In code: [`HessianOperator`](../reference/api.md).
 
 $$G \;=\; J^\top H_\ell J$$
 
-Drops the model-curvature term, keeping only the part of $H$ that flows through the model Jacobian. For convex per-sample losses (cross-entropy + softmax, MSE), $H_\ell$ is PSD, so $G$ is **PSD by construction** — useful when you need a positive semidefinite preconditioner.
+Shape $n \times n$. Drops the model-curvature term, keeping only the part of $H$ that flows through the model Jacobian. For convex per-sample losses (cross-entropy + softmax, MSE), $H_\ell$ is PSD, so $G$ is **PSD by construction** — useful when you need a positive semidefinite preconditioner.
+
+At a global minimum where the loss residuals $\partial \ell / \partial f_c$ vanish, the dropped term is zero and $H = G$.
 
 For cross-entropy + softmax classification, $G$ equals the Fisher information matrix exactly.
 
