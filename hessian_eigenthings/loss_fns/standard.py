@@ -6,6 +6,9 @@ from typing import Any
 import torch
 from torch import nn
 
+# See `huggingface.py:_LossOfOutputWithHvp` — same pattern, reused here.
+from hessian_eigenthings.loss_fns.huggingface import _LossOfOutputWithHvp
+
 
 def supervised_loss(
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
@@ -36,6 +39,67 @@ def supervised_loss_of_output(
         return criterion(output, y)
 
     return _fn
+
+
+def _ce_loss(output: torch.Tensor, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    _, y = batch
+    return torch.nn.functional.cross_entropy(output, y)
+
+
+def _ce_hvp(
+    output: torch.Tensor, batch: tuple[torch.Tensor, torch.Tensor], u: torch.Tensor
+) -> torch.Tensor:
+    """Closed-form H @ u for mean-reduced softmax + cross-entropy.
+
+    `output` has shape `(N, C)` (logits). For each row,
+    `H_row = (diag(p) - p p^T) / N` where `p = softmax(output)`.
+    """
+    flat_output = output.reshape(-1, output.size(-1))
+    flat_u = u.reshape(-1, u.size(-1))
+    n = float(flat_output.size(0))
+    p = torch.softmax(flat_output, dim=-1)
+    dot = (p * flat_u).sum(dim=-1, keepdim=True)
+    return ((p * flat_u - p * dot) / n).view_as(u)
+
+
+def cross_entropy_loss_of_output() -> (
+    Callable[[torch.Tensor, tuple[torch.Tensor, torch.Tensor]], torch.Tensor]
+):
+    """`loss_of_output_fn` for supervised classification with mean-reduced cross-entropy.
+
+    Carries a `.hvp(output, batch, u)` method holding the closed-form
+    loss-Hessian-vector product, which `GGNOperator` picks up to bypass the
+    autograd double-backward.
+    """
+    return _LossOfOutputWithHvp(_ce_loss, _ce_hvp)
+
+
+def _mse_loss(output: torch.Tensor, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    _, y = batch
+    return torch.nn.functional.mse_loss(output, y)
+
+
+def _mse_hvp(
+    output: torch.Tensor, batch: tuple[torch.Tensor, torch.Tensor], u: torch.Tensor
+) -> torch.Tensor:
+    """Closed-form H @ u for mean-reduced MSE.
+
+    `mse_loss = mean((output - target)^2)`. The loss-Hessian w.r.t. output is
+    constant `(2/N) * I` where `N = output.numel()`. So `H @ u = (2/N) * u`.
+    """
+    n = float(output.numel())
+    return (2.0 / n) * u
+
+
+def mse_loss_of_output() -> (
+    Callable[[torch.Tensor, tuple[torch.Tensor, torch.Tensor]], torch.Tensor]
+):
+    """`loss_of_output_fn` for supervised regression with mean-reduced MSE.
+
+    Carries a `.hvp(output, batch, u)` method holding the closed-form
+    loss-Hessian-vector product `(2/N) * u`.
+    """
+    return _LossOfOutputWithHvp(_mse_loss, _mse_hvp)
 
 
 def supervised_per_sample_loss(

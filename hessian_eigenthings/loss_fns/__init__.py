@@ -5,6 +5,8 @@ from hessian_eigenthings.loss_fns.huggingface import (
     hf_seq2seq_loss,
 )
 from hessian_eigenthings.loss_fns.standard import (
+    cross_entropy_loss_of_output,
+    mse_loss_of_output,
     supervised_forward,
     supervised_loss,
     supervised_loss_of_output,
@@ -21,6 +23,8 @@ __all__ = [
     "hf_lm_loss",
     "hf_lm_loss_of_output",
     "hf_seq2seq_loss",
+    "cross_entropy_loss_of_output",
+    "mse_loss_of_output",
     "supervised_forward",
     "supervised_loss",
     "supervised_loss_of_output",
