@@ -87,6 +87,7 @@ def _ours_ggn_ce(model, batch_list) -> GGNOperator:
         dataloader=batch_list,
         forward_fn=lambda m, b: m(b[0]),
         loss_of_output_fn=lambda out, b: nn.functional.cross_entropy(out, b[1]),
+        loss_hvp="autograd",
     )
 
 

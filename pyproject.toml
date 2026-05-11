@@ -67,7 +67,10 @@ select = ["E", "F", "W", "I", "B", "UP", "N", "SIM"]
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D", "N803", "N806"]
+# ML conventions: N803/N806 (uppercase vars like B, T, H, N), N812
+# (import torch.nn.functional as F). Allowed in tests, scripts, examples.
+"tests/*" = ["D", "N803", "N806", "N812"]
+"scripts/*" = ["D", "N803", "N806", "N812"]
 "examples/*" = ["D"]
 
 [tool.black]

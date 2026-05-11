@@ -91,6 +91,7 @@ def mse_setup():
 
 
 def test_ggn_matvec_matches_full_construction_cross_entropy(ce_setup) -> None:
+    """Autograd path (legacy fallback) on CE."""
     model, batch = ce_setup
     G_full = _full_ggn(model, _forward, _ce_loss, batch)
     op = GGNOperator(
@@ -98,6 +99,7 @@ def test_ggn_matvec_matches_full_construction_cross_entropy(ce_setup) -> None:
         dataloader=[batch],
         forward_fn=_forward,
         loss_of_output_fn=_ce_loss,
+        loss_hvp="autograd",
     )
     g = _seed(3)
     for _ in range(5):
@@ -106,6 +108,7 @@ def test_ggn_matvec_matches_full_construction_cross_entropy(ce_setup) -> None:
 
 
 def test_ggn_matvec_matches_full_construction_mse(mse_setup) -> None:
+    """Autograd path on MSE."""
     model, batch = mse_setup
     G_full = _full_ggn(model, _forward, _mse_loss, batch)
     op = GGNOperator(
@@ -113,6 +116,7 @@ def test_ggn_matvec_matches_full_construction_mse(mse_setup) -> None:
         dataloader=[batch],
         forward_fn=_forward,
         loss_of_output_fn=_mse_loss,
+        loss_hvp="autograd",
     )
     g = _seed(4)
     v = torch.randn(op.size, generator=g, dtype=torch.float64)
@@ -128,6 +132,7 @@ def test_ggn_full_dataset_averages(ce_setup) -> None:
         dataloader=[b1, b2],
         forward_fn=_forward,
         loss_of_output_fn=_ce_loss,
+        loss_hvp="autograd",
     )
     G1 = _full_ggn(model, _forward, _ce_loss, b1)
     G2 = _full_ggn(model, _forward, _ce_loss, b2)
@@ -145,6 +150,7 @@ def test_ggn_is_psd(ce_setup) -> None:
         dataloader=[batch],
         forward_fn=_forward,
         loss_of_output_fn=_ce_loss,
+        loss_hvp="autograd",
     )
     g = _seed(6)
     for _ in range(20):
@@ -156,7 +162,23 @@ def test_ggn_is_psd(ce_setup) -> None:
 def test_ggn_rejects_wrong_shape(ce_setup) -> None:
     model, batch = ce_setup
     op = GGNOperator(
-        model=model, dataloader=[batch], forward_fn=_forward, loss_of_output_fn=_ce_loss
+        model=model,
+        dataloader=[batch],
+        forward_fn=_forward,
+        loss_of_output_fn=_ce_loss,
+        loss_hvp="autograd",
     )
     with pytest.raises(ValueError, match="shape"):
         op.matvec(torch.zeros(op.size + 1, dtype=torch.float64))
+
+
+def test_ggn_analytical_requires_hvp(ce_setup) -> None:
+    """The default analytical path needs `loss_of_output_fn.hvp` to be defined."""
+    model, batch = ce_setup
+    with pytest.raises(ValueError, match="hvp"):
+        GGNOperator(
+            model=model,
+            dataloader=[batch],
+            forward_fn=_forward,
+            loss_of_output_fn=_ce_loss,  # no .hvp attribute
+        )

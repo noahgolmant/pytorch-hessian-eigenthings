@@ -217,6 +217,8 @@ on GGNOperator.
 Either fix is ~50-80 LOC + tests. Should be paired with a CI test that
 runs a Pythia-160M GGN matvec to prevent regression.
 
+**Status (2026-05-11)**: implemented on `feature/ggn-oom-fix` branch, tests CPU-green, awaiting GPU validation.
+
 ### 5. Per-matrix-parameter ParamFilter convenience
 
 Common pattern: "treat one weight matrix as the parameter of interest, all

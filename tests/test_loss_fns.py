@@ -5,9 +5,9 @@ import torch
 from torch import nn
 
 from hessian_eigenthings.loss_fns import (
+    cross_entropy_loss_of_output,
     supervised_forward,
     supervised_loss,
-    supervised_loss_of_output,
     supervised_per_sample_loss,
 )
 from hessian_eigenthings.operators import (
@@ -55,7 +55,7 @@ def test_supervised_forward_and_loss_of_output_power_ggn_operator() -> None:
         model=m,
         dataloader=[batch],
         forward_fn=supervised_forward,
-        loss_of_output_fn=supervised_loss_of_output(nn.functional.cross_entropy),
+        loss_of_output_fn=cross_entropy_loss_of_output(),
     )
     v = torch.randn(op.size, dtype=torch.float64)
     out = op.matvec(v)
