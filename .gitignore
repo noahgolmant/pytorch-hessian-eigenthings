@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Claude Code transient state (the hooks + settings.json ARE tracked)
+.claude/scheduled_tasks.lock
