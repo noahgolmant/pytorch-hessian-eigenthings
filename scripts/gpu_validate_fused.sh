@@ -7,18 +7,46 @@
 set -Eeuo pipefail
 
 PROJECT="${PROJECT:?Set PROJECT to your GCP project ID, e.g. PROJECT=my-project bash scripts/gpu_validate_fused.sh}"
-ZONE_CANDIDATES=(
-  "us-central1-a" "us-central1-c"
-  "us-east4-c" "us-east5-b"
-  "us-west1-b" "us-west3-b" "us-west4-b"
-  "europe-west4-a" "europe-west4-b"
-  "asia-southeast1-c"
-)
+MACHINE_CLASS="${MACHINE_CLASS:-a100-80gb}"
 ZONE=""
 INSTANCE_NAME="fused-validate-$(date +%s)"
+PROVISIONING="STANDARD"
+INSTANCE_EXTRA_ARGS=()
 
-MACHINE_TYPE="a2-ultragpu-1g"
-ACCELERATOR="type=nvidia-a100-80gb,count=1"
+case "$MACHINE_CLASS" in
+  a100-80gb)
+    MACHINE_TYPE="a2-ultragpu-1g"
+    ACCELERATOR="type=nvidia-a100-80gb,count=1"
+    ZONE_CANDIDATES=(
+      "us-central1-a" "us-central1-c"
+      "us-east4-c" "us-east5-b"
+      "us-west1-b" "us-west3-b" "us-west4-b"
+    )
+    ;;
+  a100-40gb)
+    MACHINE_TYPE="a2-highgpu-1g"
+    ACCELERATOR="type=nvidia-tesla-a100,count=1"
+    ZONE_CANDIDATES=(
+      "us-central1-a" "us-central1-b" "us-central1-c" "us-central1-f"
+      "us-east1-b" "us-west1-b" "us-west3-b"
+    )
+    ;;
+  h100-spot)
+    MACHINE_TYPE="a3-highgpu-1g"
+    ACCELERATOR="type=nvidia-h100-80gb,count=1"
+    PROVISIONING="SPOT"
+    INSTANCE_EXTRA_ARGS=(--instance-termination-action=DELETE)
+    ZONE_CANDIDATES=(
+      "us-central1-a" "us-central1-b" "us-central1-c"
+      "us-east4-c" "us-east5-b"
+    )
+    ;;
+  *)
+    echo "ERROR: unknown MACHINE_CLASS=$MACHINE_CLASS (valid: a100-80gb, a100-40gb, h100-spot)" >&2
+    exit 1
+    ;;
+esac
+
 IMAGE_FAMILY="pytorch-2-9-cu129-ubuntu-2404-nvidia-580"
 IMAGE_PROJECT="deeplearning-platform-release"
 BOOT_DISK_SIZE="100GB"
@@ -52,7 +80,8 @@ for try_zone in "${ZONE_CANDIDATES[@]}"; do
       --boot-disk-size="$BOOT_DISK_SIZE" \
       --boot-disk-type="$BOOT_DISK_TYPE" \
       --maintenance-policy=TERMINATE \
-      --provisioning-model=STANDARD \
+      --provisioning-model="$PROVISIONING" \
+      ${INSTANCE_EXTRA_ARGS[@]+"${INSTANCE_EXTRA_ARGS[@]}"} \
       --metadata=install-nvidia-driver=True \
       --scopes=https://www.googleapis.com/auth/cloud-platform 2>&1; then
     ZONE="$try_zone"
