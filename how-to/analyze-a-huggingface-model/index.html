@@ -658,6 +658,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../concepts/fused-ce-hvp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fused CE HVP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../concepts/numerical-stability/" class="md-nav__link">
         
   
@@ -833,6 +861,17 @@
     <span class="md-ellipsis">
       
         Tips
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ggn-at-lm-scale-vocab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GGN at LM-scale vocab
       
     </span>
   </a>
@@ -1278,6 +1317,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#ggn-at-lm-scale-vocab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GGN at LM-scale vocab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#restricting-to-a-parameter-subset" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1358,16 +1408,35 @@
 <li><strong>Keep batches small</strong> for HVP: each batch costs ~3× the memory of a normal forward+backward.</li>
 <li><strong>Set <code>model.eval()</code></strong> to disable dropout. With dropout active, repeated HVPs on the same vector aren't deterministic — though if the loss surface you're analyzing <em>is</em> the dropout-active training-time loss, leave it on.</li>
 </ul>
+<h2 id="ggn-at-lm-scale-vocab">GGN at LM-scale vocab<a class="headerlink" href="#ggn-at-lm-scale-vocab" title="Permanent link">&para;</a></h2>
+<p>For models with large vocabularies (GPT-2's 50k, Llama-3's 128k,
+Qwen's 152k, …) prefer <code>GGNOperator</code> with <code>hf_lm_loss_of_output()</code>
+over <code>HessianOperator</code>. It uses a closed-form cross-entropy
+Hessian-vector product backed by a fused kernel (Triton on CUDA,
+<code>torch.compile</code> everywhere else), giving ~3× wall-time and 2× peak-memory
+savings over the autograd double-backward path. See
+<a href="../../concepts/fused-ce-hvp/">Fused CE HVP</a> for the trade-offs and
+benchmarks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">hessian_eigenthings.loss_fns</span><span class="w"> </span><span class="kn">import</span> <span class="n">hf_lm_loss_of_output</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">hessian_eigenthings.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">GGNOperator</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">operator</span> <span class="o">=</span> <span class="n">GGNOperator</span><span class="p">(</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">dataloader</span><span class="o">=</span><span class="n">dataloader</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">loss_of_output_fn</span><span class="o">=</span><span class="n">hf_lm_loss_of_output</span><span class="p">(),</span>  <span class="c1"># fused=&quot;auto&quot; by default</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">result</span> <span class="o">=</span> <span class="n">lanczos</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
 <h2 id="restricting-to-a-parameter-subset">Restricting to a parameter subset<a class="headerlink" href="#restricting-to-a-parameter-subset" title="Permanent link">&para;</a></h2>
 <p>Use <a href="../per-layer-hessian/"><code>param_filter</code></a> to compute the Hessian of just the attention layers, the MLP layers, the LM head, etc.:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">hessian_eigenthings.param_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">match_names</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">attn_op</span> <span class="o">=</span> <span class="n">HessianOperator</span><span class="p">(</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">dataloader</span><span class="o">=</span><span class="n">dataloader</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">loss_fn</span><span class="o">=</span><span class="n">hf_lm_loss</span><span class="p">(),</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">param_filter</span><span class="o">=</span><span class="n">match_names</span><span class="p">(</span><span class="s2">&quot;transformer.h.*.attn.*&quot;</span><span class="p">),</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">hessian_eigenthings.param_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">match_names</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">attn_op</span> <span class="o">=</span> <span class="n">HessianOperator</span><span class="p">(</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">dataloader</span><span class="o">=</span><span class="n">dataloader</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">loss_fn</span><span class="o">=</span><span class="n">hf_lm_loss</span><span class="p">(),</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">param_filter</span><span class="o">=</span><span class="n">match_names</span><span class="p">(</span><span class="s2">&quot;transformer.h.*.attn.*&quot;</span><span class="p">),</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">)</span>
 </code></pre></div>
 <h2 id="full-runnable-example">Full runnable example<a class="headerlink" href="#full-runnable-example" title="Permanent link">&para;</a></h2>
 <p>See <a href="https://github.com/noahgolmant/pytorch-hessian-eigenthings/blob/v1/examples/huggingface_tiny_gpt2.py"><code>examples/huggingface_tiny_gpt2.py</code></a> — runs end-to-end on CPU in well under a minute on tiny-gpt2 (~100k params).</p>

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/numerical-stability/">
+        <link rel="canonical" href="https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/fused-ce-hvp/">
       
       
-        <link rel="prev" href="../fused-ce-hvp/">
+        <link rel="prev" href="../ggn-vs-fisher-vs-hessian/">
       
       
-        <link rel="next" href="../../how-to/analyze-a-huggingface-model/">
+        <link rel="next" href="../numerical-stability/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Numerical stability - hessian-eigenthings</title>
+        <title>Fused CE HVP - hessian-eigenthings</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#numerical-stability" class="md-skip">
+        <a href="#fused-ce-hessian-vector-product" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Numerical stability
+              Fused CE HVP
             
           </span>
         </div>
@@ -655,34 +655,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../fused-ce-hvp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Fused CE HVP
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -702,7 +674,7 @@
   <span class="md-ellipsis">
     
   
-    Numerical stability
+    Fused CE HVP
   
 
     
@@ -720,7 +692,7 @@
   <span class="md-ellipsis">
     
   
-    Numerical stability
+    Fused CE HVP
   
 
     
@@ -746,10 +718,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dtype" class="md-nav__link">
+  <a href="#why-fuse-the-ce-hvp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dtype
+        Why fuse the CE HVP
       
     </span>
   </a>
@@ -757,10 +729,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#finite-difference-hvp-varepsilon-selection" class="md-nav__link">
+  <a href="#backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Finite-difference HVP \(\varepsilon\) selection
+        Backends
       
     </span>
   </a>
@@ -768,10 +740,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reorthogonalization-in-lanczos" class="md-nav__link">
+  <a href="#measured-speedups" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reorthogonalization in Lanczos
+        Measured speedups
       
     </span>
   </a>
@@ -779,10 +751,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mixed-precision-tradeoffs-in-iterative-algorithms" class="md-nav__link">
+  <a href="#numerical-correctness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixed-precision tradeoffs in iterative algorithms
+        Numerical correctness
       
     </span>
   </a>
@@ -790,10 +762,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
+  <a href="#when-the-fused-path-is-not-what-you-want" class="md-nav__link">
     <span class="md-ellipsis">
       
-        References
+        When the fused path is not what you want
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
       
     </span>
   </a>
@@ -804,6 +787,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1273,10 +1284,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dtype" class="md-nav__link">
+  <a href="#why-fuse-the-ce-hvp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dtype
+        Why fuse the CE HVP
       
     </span>
   </a>
@@ -1284,10 +1295,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#finite-difference-hvp-varepsilon-selection" class="md-nav__link">
+  <a href="#backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Finite-difference HVP \(\varepsilon\) selection
+        Backends
       
     </span>
   </a>
@@ -1295,10 +1306,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reorthogonalization-in-lanczos" class="md-nav__link">
+  <a href="#measured-speedups" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reorthogonalization in Lanczos
+        Measured speedups
       
     </span>
   </a>
@@ -1306,10 +1317,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mixed-precision-tradeoffs-in-iterative-algorithms" class="md-nav__link">
+  <a href="#numerical-correctness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixed-precision tradeoffs in iterative algorithms
+        Numerical correctness
       
     </span>
   </a>
@@ -1317,10 +1328,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
+  <a href="#when-the-fused-path-is-not-what-you-want" class="md-nav__link">
     <span class="md-ellipsis">
       
-        References
+        When the fused path is not what you want
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
       
     </span>
   </a>
@@ -1347,98 +1369,145 @@
   
 
 
-<h1 id="numerical-stability">Numerical stability<a class="headerlink" href="#numerical-stability" title="Permanent link">&para;</a></h1>
-<p>A short guide to dtype choice, finite-difference <span class="arithmatex">\(\varepsilon\)</span> tuning, and reorthogonalization defaults.</p>
-<h2 id="dtype">Dtype<a class="headerlink" href="#dtype" title="Permanent link">&para;</a></h2>
+<h1 id="fused-ce-hessian-vector-product">Fused CE Hessian-vector product<a class="headerlink" href="#fused-ce-hessian-vector-product" title="Permanent link">&para;</a></h1>
+<p>When you analyze a HuggingFace causal LM with <code>GGNOperator</code> and
+<code>hf_lm_loss_of_output()</code>, the library uses a <em>fused</em> kernel for the
+core cross-entropy Hessian-vector product (CE HVP) instead of relying
+on autograd to differentiate the loss twice. This page explains why,
+what the kernel does, and what trade-offs each backend has.</p>
+<h2 id="why-fuse-the-ce-hvp">Why fuse the CE HVP<a class="headerlink" href="#why-fuse-the-ce-hvp" title="Permanent link">&para;</a></h2>
+<p>For a softmax + mean-reduced cross-entropy loss, the loss-Hessian
+applied to a tangent <code>u</code> has a closed form. Per non-ignored position,
+with <code>p = softmax(logits)</code> and <code>n</code> non-ignored positions:</p>
+<div class="arithmatex">\[
+H_{\\text{loss}} \\cdot u \\;=\\; \\frac{p \\odot u - p \\,(p \\cdot u)}{n}
+\]</div>
+<p>This is the only place in a <code>GGNOperator</code> matvec where the
+<code>(batch × seq × vocab)</code> tensor appears. With <code>V = 50,304</code> and
+<code>(B, T) = (64, 256)</code>, the unfused version materializes several
+<code>(N, V) = (16384, 50304)</code> float32 tensors — about 3.3 GB <em>per copy</em>,
+and a double-backward over softmax allocates 5–6 of them. That's the
+~20 GB peak you'd see from naïve autograd, and it dominates the wall
+time of a Lanczos iteration on real LLMs.</p>
+<p>The fused kernel turns those <code>O(N · V)</code> intermediates into a single
+output buffer plus an online-softmax reduction, eliminating the
+softmax-graph rebuild step entirely.</p>
+<h2 id="backends">Backends<a class="headerlink" href="#backends" title="Permanent link">&para;</a></h2>
+<p><code>hf_lm_loss_of_output(fused=...)</code> selects which backend computes the
+fused CE HVP:</p>
 <table>
 <thead>
 <tr>
-<th>dtype</th>
-<th>Where it makes sense</th>
-<th>Caveats</th>
+<th>backend</th>
+<th>how</th>
+<th>when to pick</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>fp64</td>
-<td>Validation tests, small models, papers that quote eigenvalues to 6+ sig figs</td>
-<td>Slow; doubles memory; CUDA kernels less optimized</td>
+<td><code>"auto"</code> <em>(default)</em></td>
+<td>Triton if the inputs are on CUDA and <code>triton</code> imports; else <code>torch.compile</code>.</td>
+<td>The right answer almost always. Auto-falls-back on CPU.</td>
 </tr>
 <tr>
-<td>fp32</td>
-<td>Most analysis on models up to ~1B params</td>
-<td>The default</td>
+<td><code>"triton"</code></td>
+<td>Hand-written CUDA Triton kernel using an online-softmax reduction.</td>
+<td>When you specifically want the Triton path and inputs are on CUDA.</td>
 </tr>
 <tr>
-<td>bf16</td>
-<td>LLM scale (≥7B), where fp32 master copies are infeasible</td>
-<td>Per-matvec noise on the order of 1%</td>
+<td><code>"compile"</code></td>
+<td><code>torch.compile</code>-fused; Inductor folds softmax + elementwise + reduction into a small number of kernels and eliminates the <code>(N, V)</code> intermediates. Works on CPU, CUDA, and MPS.</td>
+<td>When Triton isn't available, or for non-CUDA hardware.</td>
 </tr>
 <tr>
-<td>fp16</td>
-<td>Generally avoid for HVP — narrow exponent range underflows</td>
-<td>Use bf16 instead at scale</td>
+<td><code>"eager"</code></td>
+<td>Plain PyTorch reference; full <code>(N, V)</code> materialization.</td>
+<td>For debugging — or for tiny vocab where the fused path costs more than it saves.</td>
 </tr>
 </tbody>
 </table>
-<p>The library inherits the operator's dtype from the model parameters. Cast the model with <code>model.to(torch.float64)</code> for high-precision validation.</p>
-<h2 id="finite-difference-hvp-varepsilon-selection">Finite-difference HVP <span class="arithmatex">\(\varepsilon\)</span> selection<a class="headerlink" href="#finite-difference-hvp-varepsilon-selection" title="Permanent link">&para;</a></h2>
-<p>The central-difference approximation <span class="arithmatex">\(Hv \approx (\nabla L(\theta + \varepsilon v) - \nabla L(\theta - \varepsilon v)) / 2\varepsilon\)</span> has two competing error sources:</p>
-<ul>
-<li><strong>Truncation bias</strong>: <span class="arithmatex">\(O(\varepsilon^2 \cdot \|v\| \cdot \|\nabla^3 L\|)\)</span></li>
-<li><strong>Roundoff (cancellation)</strong>: <span class="arithmatex">\(O(\varepsilon_\text{machine} \cdot \|\nabla L\| / \varepsilon)\)</span></li>
-</ul>
-<p>Optimal <span class="arithmatex">\(\varepsilon\)</span> minimizes their sum at <span class="arithmatex">\(\varepsilon^* \approx \varepsilon_\text{machine}^{1/3}\)</span>:</p>
+<p>The closed-form HVP itself (independent of backend) lets <code>GGNOperator</code>
+skip the autograd double-backward through the loss entirely — it walks
+the model graph once for <code>J @ u</code> (a JVP), then applies this closed-form
+<code>H_loss @ J u</code>, then walks the graph backward once for <code>J^T (H_loss J u)</code>
+(a VJP). One forward, one backward, no second-order graph through
+softmax.</p>
+<h2 id="measured-speedups">Measured speedups<a class="headerlink" href="#measured-speedups" title="Permanent link">&para;</a></h2>
+<p>Headline numbers from an A100-40GB at <code>B=64, T=256, V=50304, fp32</code>:</p>
 <table>
 <thead>
 <tr>
-<th>dtype</th>
-<th>Optimal <span class="arithmatex">\(\varepsilon\)</span></th>
-<th>Best-case relative error</th>
-<th>Realistic relative error</th>
+<th>backend</th>
+<th>wall time</th>
+<th>peak memory</th>
+<th>speedup</th>
+<th>memory reduction</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>fp64</td>
-<td><span class="arithmatex">\(\sim 10^{-5}\)</span></td>
-<td><span class="arithmatex">\(\sim 10^{-10}\)</span></td>
-<td><span class="arithmatex">\(\sim 10^{-9}\)</span></td>
+<td>eager</td>
+<td>48.6 ms</td>
+<td>19.78 GB</td>
+<td>1.00×</td>
+<td>1.00×</td>
 </tr>
 <tr>
-<td>fp32</td>
-<td><span class="arithmatex">\(\sim 10^{-3}\)</span></td>
-<td><span class="arithmatex">\(\sim 10^{-6}\)</span></td>
-<td><span class="arithmatex">\(\sim 10^{-5}\)</span> to <span class="arithmatex">\(10^{-4}\)</span></td>
+<td>compile</td>
+<td>18.0 ms</td>
+<td>9.89 GB</td>
+<td>2.70×</td>
+<td>2.00×</td>
 </tr>
 <tr>
-<td>bf16</td>
-<td><span class="arithmatex">\(\sim 0.1\)</span></td>
-<td><span class="arithmatex">\(\sim 10^{-2}\)</span></td>
-<td><span class="arithmatex">\(\sim 10^{-2}\)</span> to <span class="arithmatex">\(5 \cdot 10^{-2}\)</span></td>
+<td>triton</td>
+<td>14.5 ms</td>
+<td>9.89 GB</td>
+<td><strong>3.35×</strong></td>
+<td><strong>2.00×</strong></td>
 </tr>
 </tbody>
 </table>
-<p><code>HessianOperator(method="finite_difference")</code> selects these defaults automatically. Override with <code>fd_eps=</code>.</p>
-<p>For LLM-scale spectral analysis where you're already in bf16, the finite-difference noise is dominated by precision noise of the gradient itself — finite-difference is the right tool. For high-precision eigenvalue claims on small models, use the autograd path in fp32 or fp64.</p>
-<h2 id="reorthogonalization-in-lanczos">Reorthogonalization in Lanczos<a class="headerlink" href="#reorthogonalization-in-lanczos" title="Permanent link">&para;</a></h2>
-<p>Without reorthogonalization, classical Lanczos loses orthogonality after enough steps and produces <em>ghost</em> eigenvalues — duplicated copies of converged eigenvalues that pollute the result (Paige 1976). The fix is full Gram-Schmidt against all prior basis vectors after each step, at <span class="arithmatex">\(O(m^2 n)\)</span> cost.</p>
-<p><code>lanczos(operator, ..., reorthogonalize=None)</code> defaults to <code>True</code> for <code>max_iter &lt;= 50</code> and <code>False</code> for larger Krylov dimensions. If you're analyzing a Hessian known to have many near-degenerate eigenvalues — common for transformers — keep reorthogonalization on regardless.</p>
-<h2 id="mixed-precision-tradeoffs-in-iterative-algorithms">Mixed-precision tradeoffs in iterative algorithms<a class="headerlink" href="#mixed-precision-tradeoffs-in-iterative-algorithms" title="Permanent link">&para;</a></h2>
-<p>For top eigenpairs in fp32 / bf16, expect the eigenvalue estimates to inherit roughly the per-matvec relative error compounded across Lanczos steps. Specifically:</p>
+<p>Memory reduction is the same for <code>compile</code> and <code>triton</code> because both
+eliminate the <code>(N, V)</code> intermediates; Triton wins on wall time because
+it can stream the softmax in one pass and avoid even the temporary
+activation storage that Inductor still produces.</p>
+<p>The benefit scales with vocab size: for shapes where the unfused eager
+path OOMs (e.g. <code>V = 100,000</code>, common for Llama-3 / Qwen / Mistral),
+the fused backends remain the only viable option.</p>
+<h2 id="numerical-correctness">Numerical correctness<a class="headerlink" href="#numerical-correctness" title="Permanent link">&para;</a></h2>
+<p>The test suite asserts cross-backend agreement to within a vocab-dependent
+tolerance band:</p>
 <ul>
-<li><strong>Lanczos with reorthogonalization</strong>: tridiagonal eigenvalues good to ~3-5x the per-matvec error.</li>
-<li><strong>Power iteration</strong>: convergence is exponential in <span class="arithmatex">\(|\lambda_2/\lambda_1|^t\)</span>; precision noise sets a floor on how close to the true eigenvalue you can get.</li>
-<li><strong>Hutchinson trace</strong>: stochastic noise dominates over precision noise as long as you take enough samples.</li>
-<li><strong>SLQ density</strong>: smoothing washes out per-matvec noise effectively.</li>
+<li><strong>fp32</strong>: max abs deviation between <code>eager</code>, <code>compile</code>, and <code>triton</code>
+  is below <code>1e-5</code> across vocab sizes 7, 100, 50,257, and 130,000.</li>
+<li><strong>bf16</strong> / <strong>fp16</strong>: max abs deviation is below the dtype's own
+  rounding noise — i.e. the fused kernels are no less accurate than
+  the eager reference at the same dtype.</li>
+<li><strong>Analytical ground truth</strong>: the closed-form HVP itself is checked
+  against the full Hessian (built via <code>torch.autograd.functional.hessian</code>)
+  on a small model. All three backends match the analytical Hessian to
+  within <code>1e-5</code>.</li>
 </ul>
-<p>In practice, for <em>qualitative</em> spectral analysis (sharpness trends, density shape, top-eigenvalue changes during training), fp32 or bf16 is fine. For <em>absolute precision</em> of specific eigenvalues, drop to fp64 on a tractable problem.</p>
-<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<p>These checks run on every commit in CI, and against an actual A100 GPU
+on every fused-CE-touching change.</p>
+<h2 id="when-the-fused-path-is-not-what-you-want">When the fused path is <em>not</em> what you want<a class="headerlink" href="#when-the-fused-path-is-not-what-you-want" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Paige, C. C. (1976). <em>Error analysis of the Lanczos algorithm for tridiagonalizing a symmetric matrix.</em></li>
-<li>Granziol &amp; Juarev (2026). <em>Hessian Spectral Analysis at Foundation Model Scale.</em> arXiv:2602.00816.</li>
-<li>Pearlmutter, B. A. (1994). <em>Fast Exact Multiplication by the Hessian.</em> Neural Computation 6(1).</li>
+<li><strong>Tiny vocabularies (<code>V ≲ 1000</code>)</strong>: the fused-kernel launch and
+  reduction overhead can outweigh its memory savings. Pass
+  <code>fused="eager"</code> for these — though you usually don't need
+  <code>GGNOperator</code> for a tiny-vocab model in the first place.</li>
+<li><strong>Debugging a numerical anomaly</strong>: force <code>fused="eager"</code> to remove
+  Triton/compile from the picture and confirm the bug isn't kernel-side.</li>
+<li><strong>Verifying a custom <code>loss_of_output_fn</code></strong>: when you write your own
+  HVP closure for a non-CE loss, compare against the eager reference
+  on a tiny example before switching to fused for performance.</li>
 </ul>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
+<p>The kernel and closed-form HVP live in
+<a href="https://github.com/noahgolmant/pytorch-hessian-eigenthings/blob/master/hessian_eigenthings/loss_fns/_fused_ce_hvp.py"><code>hessian_eigenthings/loss_fns/_fused_ce_hvp.py</code></a>
+and the user-facing <code>loss_of_output_fn</code> factory in
+<a href="https://github.com/noahgolmant/pytorch-hessian-eigenthings/blob/master/hessian_eigenthings/loss_fns/huggingface.py"><code>hessian_eigenthings/loss_fns/huggingface.py</code></a>.</p>
 
 
 
