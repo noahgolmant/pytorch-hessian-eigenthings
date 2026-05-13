@@ -50,6 +50,8 @@ If you'd rather use the GGN (PSD by construction, often what's meant by "the Hes
 
 There's a finite-difference HVP path (`HessianOperator(method="finite_difference")`) for when double-backward is impractical, useful with FSDP and similar setups. You can restrict to a parameter subset with `param_filter=match_names("blocks.*.attn.*")` for per-block analysis.
 
+For LM-scale work (large vocabulary), `hf_lm_loss_of_output()` auto-selects a fused CE Hessian-vector kernel: Triton on CUDA (~3.4× speedup, 2× peak-memory reduction over eager), else `torch.compile` (~2.6× speedup, 2× peak-memory reduction). Pass `fused="eager"` to force the unfused reference for debugging.
+
 See [`examples/`](examples/) for runnable scripts on a small MLP, HuggingFace tiny-GPT2, and a TransformerLens model. Full docs at <https://noahgolmant.github.io/pytorch-hessian-eigenthings>.
 
 ## Working on the library
