@@ -70,8 +70,11 @@ ignore = ["E501"]
 # ML conventions: N803/N806 (uppercase vars like B, T, H, N), N812
 # (import torch.nn.functional as F). Allowed in tests, scripts, examples.
 "tests/*" = ["D", "N803", "N806", "N812"]
-"scripts/*" = ["D", "N803", "N806", "N812"]
+"scripts/*" = ["D", "B007", "N803", "N806", "N812"]
 "examples/*" = ["D"]
+# Triton kernel uses standard kernel-style names (N, V, BLOCK_V) that
+# match Triton documentation conventions and ML math notation.
+"hessian_eigenthings/loss_fns/_fused_ce_hvp.py" = ["N803", "N806"]
 
 [tool.black]
 line-length = 100
@@ -85,7 +88,7 @@ disallow_untyped_defs = true
 files = ["hessian_eigenthings"]
 
 [[tool.mypy.overrides]]
-module = ["scipy.*", "tqdm.*", "curvlinops.*", "transformer_lens.*", "transformers.*"]
+module = ["scipy.*", "tqdm.*", "curvlinops.*", "transformer_lens.*", "transformers.*", "triton.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

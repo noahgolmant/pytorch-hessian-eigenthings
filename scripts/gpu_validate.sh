@@ -5,11 +5,11 @@
 # Usage:
 #   ./scripts/gpu_validate.sh
 #
-# Requires: gcloud configured, project arcane-rigging-422722-h8 (or set PROJECT).
+# Requires: gcloud configured, project set via PROJECT env var.
 
 set -Eeuo pipefail
 
-PROJECT="${PROJECT:-arcane-rigging-422722-h8}"
+PROJECT="${PROJECT:?Set PROJECT to your GCP project ID, e.g. PROJECT=my-project bash scripts/gpu_validate.sh}"
 ZONE_CANDIDATES=("us-central1-a" "us-central1-b" "us-central1-c" "us-central1-f")
 ZONE=""
 INSTANCE_NAME="ggn-validate-$(date +%s)"
