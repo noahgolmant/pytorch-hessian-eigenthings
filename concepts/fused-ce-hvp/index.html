@@ -1379,9 +1379,7 @@ what the kernel does, and what trade-offs each backend has.</p>
 <p>For a softmax + mean-reduced cross-entropy loss, the loss-Hessian
 applied to a tangent <code>u</code> has a closed form. Per non-ignored position,
 with <code>p = softmax(logits)</code> and <code>n</code> non-ignored positions:</p>
-<div class="arithmatex">\[
-H_{\\text{loss}} \\cdot u \\;=\\; \\frac{p \\odot u - p \\,(p \\cdot u)}{n}
-\]</div>
+<div class="arithmatex">\[H_{\text{loss}} \, u \;=\; \frac{p \odot u \;-\; p \,(p \cdot u)}{n}\]</div>
 <p>This is the only place in a <code>GGNOperator</code> matvec where the
 <code>(batch × seq × vocab)</code> tensor appears. With <code>V = 50,304</code> and
 <code>(B, T) = (64, 256)</code>, the unfused version materializes several
@@ -1411,7 +1409,7 @@ fused CE HVP:</p>
 </tr>
 <tr>
 <td><code>"triton"</code></td>
-<td>Hand-written CUDA Triton kernel using an online-softmax reduction.</td>
+<td>CUDA Triton kernel using an online-softmax reduction.</td>
 <td>When you specifically want the Triton path and inputs are on CUDA.</td>
 </tr>
 <tr>
@@ -1433,7 +1431,7 @@ the model graph once for <code>J @ u</code> (a JVP), then applies this closed-fo
 (a VJP). One forward, one backward, no second-order graph through
 softmax.</p>
 <h2 id="measured-speedups">Measured speedups<a class="headerlink" href="#measured-speedups" title="Permanent link">&para;</a></h2>
-<p>Headline numbers from an A100-40GB at <code>B=64, T=256, V=50304, fp32</code>:</p>
+<p>Numbers from an A100-40GB at <code>B=64, T=256, V=50304, fp32</code>:</p>
 <table>
 <thead>
 <tr>
@@ -1489,8 +1487,8 @@ tolerance band:</p>
   on a small model. All three backends match the analytical Hessian to
   within <code>1e-5</code>.</li>
 </ul>
-<p>These checks run on every commit in CI, and against an actual A100 GPU
-on every fused-CE-touching change.</p>
+<p>These checks run on every commit in CI, and on an A100 for changes
+touching the fused CE path.</p>
 <h2 id="when-the-fused-path-is-not-what-you-want">When the fused path is <em>not</em> what you want<a class="headerlink" href="#when-the-fused-path-is-not-what-you-want" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Tiny vocabularies (<code>V ≲ 1000</code>)</strong>: the fused-kernel launch and
