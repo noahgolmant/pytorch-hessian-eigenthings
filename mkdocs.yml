@@ -79,6 +79,7 @@ nav:
       - Trace estimation: concepts/trace-estimation.md
       - Spectral density: concepts/spectral-density.md
       - GGN vs Fisher vs Hessian: concepts/ggn-vs-fisher-vs-hessian.md
+      - Fused CE HVP: concepts/fused-ce-hvp.md
       - Numerical stability: concepts/numerical-stability.md
   - How-to:
       - Analyze a HuggingFace model: how-to/analyze-a-huggingface-model.md

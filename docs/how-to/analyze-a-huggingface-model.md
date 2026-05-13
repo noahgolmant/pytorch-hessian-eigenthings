@@ -45,6 +45,29 @@ print(result.eigenvalues)
 - **Keep batches small** for HVP: each batch costs ~3× the memory of a normal forward+backward.
 - **Set `model.eval()`** to disable dropout. With dropout active, repeated HVPs on the same vector aren't deterministic — though if the loss surface you're analyzing *is* the dropout-active training-time loss, leave it on.
 
+## GGN at LM-scale vocab
+
+For models with large vocabularies (GPT-2's 50k, Llama-3's 128k,
+Qwen's 152k, …) prefer `GGNOperator` with `hf_lm_loss_of_output()`
+over `HessianOperator`. It uses a closed-form cross-entropy
+Hessian-vector product backed by a fused kernel (Triton on CUDA,
+`torch.compile` everywhere else), giving ~3× wall-time and 2× peak-memory
+savings over the autograd double-backward path. See
+[Fused CE HVP](../concepts/fused-ce-hvp.md) for the trade-offs and
+benchmarks.
+
+```python
+from hessian_eigenthings.loss_fns import hf_lm_loss_of_output
+from hessian_eigenthings.operators import GGNOperator
+
+operator = GGNOperator(
+    model=model,
+    dataloader=dataloader,
+    loss_of_output_fn=hf_lm_loss_of_output(),  # fused="auto" by default
+)
+result = lanczos(operator, k=5, max_iter=20, tol=1e-3, seed=0)
+```
+
 ## Restricting to a parameter subset
 
 Use [`param_filter`](per-layer-hessian.md) to compute the Hessian of just the attention layers, the MLP layers, the LM head, etc.:
