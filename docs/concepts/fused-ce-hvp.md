@@ -12,9 +12,7 @@ For a softmax + mean-reduced cross-entropy loss, the loss-Hessian
 applied to a tangent `u` has a closed form. Per non-ignored position,
 with `p = softmax(logits)` and `n` non-ignored positions:
 
-$$
-H_{\\text{loss}} \\cdot u \\;=\\; \\frac{p \\odot u - p \\,(p \\cdot u)}{n}
-$$
+$$H_{\text{loss}} \, u \;=\; \frac{p \odot u \;-\; p \,(p \cdot u)}{n}$$
 
 This is the only place in a `GGNOperator` matvec where the
 `(batch × seq × vocab)` tensor appears. With `V = 50,304` and
@@ -36,7 +34,7 @@ fused CE HVP:
 | backend       | how                                                              | when to pick                                                |
 | ---           | ---                                                              | ---                                                         |
 | `"auto"` *(default)* | Triton if the inputs are on CUDA and `triton` imports; else `torch.compile`. | The right answer almost always. Auto-falls-back on CPU.    |
-| `"triton"`    | Hand-written CUDA Triton kernel using an online-softmax reduction. | When you specifically want the Triton path and inputs are on CUDA. |
+| `"triton"`    | CUDA Triton kernel using an online-softmax reduction. | When you specifically want the Triton path and inputs are on CUDA. |
 | `"compile"`   | `torch.compile`-fused; Inductor folds softmax + elementwise + reduction into a small number of kernels and eliminates the `(N, V)` intermediates. Works on CPU, CUDA, and MPS. | When Triton isn't available, or for non-CUDA hardware.     |
 | `"eager"`     | Plain PyTorch reference; full `(N, V)` materialization.            | For debugging — or for tiny vocab where the fused path costs more than it saves. |
 
@@ -49,7 +47,7 @@ softmax.
 
 ## Measured speedups
 
-Headline numbers from an A100-40GB at `B=64, T=256, V=50304, fp32`:
+Numbers from an A100-40GB at `B=64, T=256, V=50304, fp32`:
 
 | backend       | wall time | peak memory | speedup | memory reduction |
 | ---           | ---       | ---         | ---     | ---              |
@@ -81,8 +79,8 @@ tolerance band:
   on a small model. All three backends match the analytical Hessian to
   within `1e-5`.
 
-These checks run on every commit in CI, and against an actual A100 GPU
-on every fused-CE-touching change.
+These checks run on every commit in CI, and on an A100 for changes
+touching the fused CE path.
 
 ## When the fused path is *not* what you want
 
