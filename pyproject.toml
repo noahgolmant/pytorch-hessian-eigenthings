@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hessian-eigenthings"
-version = "1.0.0a5"
+version = "1.0.0a6"
 description = "Iterative eigendecomposition of curvature operators (Hessian, GGN, Fisher) for PyTorch models."
 readme = "README.md"
 license = { file = "LICENSE" }
