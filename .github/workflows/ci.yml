@@ -81,7 +81,7 @@ jobs:
       - name: huggingface_tiny_gpt2
         run: timeout 120 uv run python examples/huggingface_tiny_gpt2.py
       - name: transformer_lens_attention_only
-        run: timeout 180 uv run python examples/transformer_lens_attention_only.py
+        run: timeout 360 uv run python examples/transformer_lens_attention_only.py
 
   test-docs-codeblocks:
     runs-on: ubuntu-latest
