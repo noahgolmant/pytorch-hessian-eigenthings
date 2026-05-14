@@ -141,9 +141,7 @@ def test_binary_logistic_ggn_matches_closed_form() -> None:
         model=model,
         dataloader=[(x, y)],
         forward_fn=supervised_forward,
-        loss_of_output_fn=supervised_loss_of_output(
-            nn.functional.binary_cross_entropy_with_logits
-        ),
+        loss_of_output_fn=supervised_loss_of_output(nn.functional.binary_cross_entropy_with_logits),
         loss_hvp="autograd",
     )
     _check_matvec(op, H)
@@ -242,9 +240,7 @@ def test_hessian_and_ggn_agree_on_linear_in_params_models(
     setup, loss_fn, loss_of_output_fn, loss_hvp
 ) -> None:
     model, x, y = setup()
-    h_op = HessianOperator(
-        model=model, dataloader=[(x, y)], loss_fn=loss_fn, full_dataset=True
-    )
+    h_op = HessianOperator(model=model, dataloader=[(x, y)], loss_fn=loss_fn, full_dataset=True)
     g_op = GGNOperator(
         model=model,
         dataloader=[(x, y)],
