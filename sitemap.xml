@@ -2,94 +2,94 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/fused-ce-hvp/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/ggn-vs-fisher-vs-hessian/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/numerical-stability/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/spectral-density/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/top-k-eigenvalues/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/trace-estimation/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/what-is-the-hessian/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/concepts/why-hvp-not-full-h/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/getting-started/installation/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/getting-started/quickstart/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/getting-started/transformers-quickstart/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/how-to/analyze-a-huggingface-model/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/how-to/analyze-with-transformer-lens/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/how-to/custom-curvature-operators/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/how-to/custom-loss-functions/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/how-to/distributed-ddp/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/how-to/per-layer-hessian/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/algorithms/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/api/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/loss_fns/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/operators/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
     <url>
          <loc>https://noahgolmant.github.io/pytorch-hessian-eigenthings/reference/param_utils/</loc>
-         <lastmod>2026-05-13</lastmod>
+         <lastmod>2026-05-14</lastmod>
     </url>
 </urlset>
